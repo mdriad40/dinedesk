@@ -1,0 +1,479 @@
+/* ============================================
+   DineDesk — Responsive Styles (responsive.css)
+   ============================================ */
+
+/* ======== TABLET & BELOW (< 1024px) ======== */
+@media (max-width: 1023px) {
+  /* Sidebar hidden, show toggle */
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay.active {
+    display: block;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  /* Bottom nav visible */
+  .bottom-nav {
+    display: block;
+  }
+
+  .bottom-nav-items {
+    display: flex;
+  }
+
+  /* Add padding for bottom nav */
+  .content-area {
+    padding-bottom: calc(var(--bottom-nav-height) + var(--space-6));
+  }
+
+  /* Adjust FAB position */
+  .fab {
+    bottom: calc(var(--bottom-nav-height) + var(--space-4));
+  }
+
+  /* Stat cards stack */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Users grid */
+  .users-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Overview stats */
+  .overview-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Toast positioning */
+  .toast-container {
+    top: auto;
+    bottom: calc(var(--bottom-nav-height) + var(--space-4));
+    right: var(--space-4);
+    left: var(--space-4);
+  }
+
+  .toast {
+    min-width: auto;
+    max-width: 100%;
+  }
+
+  /* Notification panel */
+  .notification-panel {
+    position: fixed;
+    top: auto;
+    bottom: var(--bottom-nav-height);
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    max-height: 60vh;
+  }
+
+  /* Chart */
+  .chart-canvas {
+    height: 200px;
+  }
+
+  /* Profile stats */
+  .profile-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Settings */
+  .settings-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  /* Form row */
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Content area padding */
+  .content-area {
+    padding: var(--space-4);
+  }
+
+  /* Page section padding */
+  .page-section {
+    padding: var(--space-4);
+  }
+
+  /* Header */
+  .top-header {
+    padding: 0 var(--space-4);
+  }
+}
+
+/* ======== MOBILE (< 768px) ======== */
+@media (max-width: 767px) {
+  /* Single column stats */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+  }
+
+  .stat-card {
+    padding: var(--space-4);
+  }
+
+  .stat-card .stat-value {
+    font-size: var(--font-xl);
+  }
+
+  .stat-card .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .stat-card .stat-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Meal toggles single column */
+  .meal-toggles-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Meal users grid */
+  .meal-users-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  .meal-user-chip {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  /* Quick actions */
+  .quick-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Overview */
+  .overview-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+
+  /* Finance actions */
+  .finance-actions {
+    flex-direction: column;
+  }
+
+  .finance-actions .btn {
+    width: 100%;
+  }
+
+  /* User card */
+  .user-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .user-card-stats {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: var(--space-2);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--gray-100);
+  }
+
+  /* Page header */
+  .page-header h2 {
+    font-size: var(--font-xl);
+  }
+
+  /* Section title */
+  .section-title-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .section-title-bar .btn {
+    width: 100%;
+  }
+
+  /* Modal full width on mobile */
+  .modal {
+    max-width: 100%;
+    margin: 0;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    max-height: 90vh;
+    align-self: flex-end;
+  }
+
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  /* Card compact padding */
+  .card {
+    padding: var(--space-4);
+  }
+
+  /* Table font size */
+  .data-table th,
+  .data-table td {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-sm);
+  }
+
+  /* Users header stacks */
+  .users-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Chart */
+  .chart-canvas {
+    height: 180px;
+  }
+
+  /* Meal date selector */
+  .meal-date-selector {
+    flex-wrap: wrap;
+  }
+
+  /* Finance summary */
+  .finance-summary-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+
+  /* Header title hidden on very small */
+  .header-title {
+    font-size: var(--font-md);
+  }
+
+  /* Auth adjustments */
+  .auth-card {
+    padding: var(--space-6);
+  }
+
+  .auth-brand h1 {
+    font-size: var(--font-2xl);
+  }
+
+  .auth-brand {
+    margin-bottom: var(--space-6);
+  }
+}
+
+/* ======== SMALL MOBILE (< 480px) ======== */
+@media (max-width: 479px) {
+  html {
+    font-size: 15px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  .stat-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+
+  .stat-card .stat-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .stat-card .stat-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .stat-card .stat-value {
+    font-size: var(--font-lg);
+  }
+
+  .stat-card .stat-label {
+    font-size: var(--font-xs);
+  }
+
+  .meal-users-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  .quick-action-card {
+    padding: var(--space-3);
+  }
+
+  .overview-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .profile-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+
+  .auth-card {
+    padding: var(--space-5);
+  }
+
+  .content-area {
+    padding: var(--space-3);
+  }
+
+  .page-section {
+    padding: var(--space-3);
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+
+  .finance-summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .meal-type-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+
+  .meal-type-tabs::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ======== LARGE DESKTOP (>= 1280px) ======== */
+@media (min-width: 1280px) {
+  .stats-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .meal-toggles-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .overview-stats {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .users-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .meal-users-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ======== EXTRA LARGE (>= 1536px) ======== */
+@media (min-width: 1536px) {
+  .content-area {
+    padding: var(--space-8);
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--space-5);
+  }
+
+  .users-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ======== PRINT STYLES ======== */
+@media print {
+  .sidebar,
+  .bottom-nav,
+  .top-header,
+  .fab,
+  .toast-container,
+  .modal-overlay {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .content-area {
+    padding: 0;
+  }
+
+  body {
+    background: white;
+  }
+
+  .card,
+  .stat-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+
+  .page-section.active {
+    animation: none;
+  }
+}
+
+/* ======== REDUCED MOTION ======== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ======== LANDSCAPE MOBILE ======== */
+@media (max-height: 500px) and (orientation: landscape) {
+  .auth-brand {
+    margin-bottom: var(--space-4);
+  }
+
+  .auth-card {
+    padding: var(--space-4);
+  }
+
+  .bottom-nav {
+    height: 52px;
+  }
+
+  .content-area {
+    padding-bottom: calc(52px + var(--space-4));
+  }
+}

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="DineDesk — Modern Dining Management System. Manage meals, deposits, and dining operations easily.">
+  <title>DineDesk — Dining Management</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="css/responsive.css">
+
+  <!-- Favicon -->
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🍽</text></svg>">
+</head>
+
+<body>
+
+  <!-- ======== PAGE LOADER ======== -->
+  <div id="pageLoader" class="page-loader">
+    <div class="sidebar-brand-icon" style="width:56px;height:56px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+        <path d="M7 2v20" />
+        <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
+      </svg>
+    </div>
+    <span class="brand-text">DineDesk</span>
+    <div class="spinner" style="margin-top:8px;"></div>
+  </div>
+
+  <!-- ======== AUTH PAGE ======== -->
+  <div id="authPage" class="auth-page" style="display:none;">
+    <div class="auth-container">
+
+      <!-- Brand -->
+      <div class="auth-brand">
+        <div class="auth-brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+            <path d="M7 2v20" />
+            <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
+          </svg>
+        </div>
+        <h1>DineDesk</h1>
+        <p>Modern Dining Management System</p>
+      </div>
+
+      <!-- ======== LOGIN VIEW ======== -->
+      <div id="loginView" class="auth-view active">
+        <div class="auth-card">
+          <div class="auth-card-header">
+            <h2>Welcome Back</h2>
+            <p>Sign in to your dining account</p>
+          </div>
+
+          <!-- Error Message -->
+          <div id="loginError" class="auth-error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span id="loginErrorText">Invalid credentials</span>
+          </div>
+
+          <form id="loginForm" class="auth-form" autocomplete="on">
+            <!-- Email or Username -->
+            <div class="form-group">
+              <label class="form-label" for="loginIdentifier">Email or Username</label>
+              <div class="input-icon-wrapper">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <input type="text" id="loginIdentifier" class="form-input" placeholder="Enter email or username"
+                  required autocomplete="username">
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group">
+              <label class="form-label" for="loginPassword">Password</label>
+              <div class="password-wrapper">
+                <input type="password" id="loginPassword" class="form-input" placeholder="Enter your password" required
+                  autocomplete="current-password">
+                <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)"
+                  aria-label="Toggle password visibility">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary auth-btn" id="loginBtn">
+              <span class="btn-text">Sign In</span>
+              <span class="btn-loader">
+                <div class="spinner spinner-sm"
+                  style="border-top-color:white;border-color:rgba(255,255,255,0.3);border-top-color:white;"></div>
+              </span>
+            </button>
+          </form>
+
+          <div class="auth-divider">or</div>
+
+          <button type="button" class="btn btn-secondary btn-block" onclick="showView('registerView')"
+            id="showCreateDiningBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="16" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+            </svg>
+            Create New Dining
+          </button>
+        </div>
+      </div>
+
+      <!-- ======== REGISTER VIEW ======== -->
+      <div id="registerView" class="auth-view">
+        <div class="auth-card">
+          <button type="button" class="auth-back" onclick="showView('loginView')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Back to Login
+          </button>
+
+          <div class="auth-card-header">
+            <h2>Create Dining</h2>
+            <p>Set up your dining management system</p>
+          </div>
+
+          <!-- Error Message -->
+          <div id="registerError" class="auth-error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span id="registerErrorText">Error</span>
+          </div>
+
+          <form id="registerForm" class="auth-form" autocomplete="off">
+            <!-- Manager Name & Dining Name -->
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="regManagerName">Manager Name</label>
+                <input type="text" id="regManagerName" class="form-input" placeholder="Your name" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="regDiningName">Dining Name</label>
+                <input type="text" id="regDiningName" class="form-input" placeholder="Hall Dining" required>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+              <label class="form-label" for="regEmail">Email Address</label>
+              <div class="input-icon-wrapper">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                <input type="email" id="regEmail" class="form-input" placeholder="you@example.com" required
+                  autocomplete="off">
+              </div>
+            </div>
+
+            <!-- Phone -->
+            <div class="form-group">
+              <label class="form-label" for="regPhone">Phone Number</label>
+              <div class="input-icon-wrapper">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+                </svg>
+                <input type="tel" id="regPhone" class="form-input" placeholder="01XXXXXXXXX" required>
+              </div>
+            </div>
+
+            <!-- Passwords -->
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="regPassword">Password</label>
+                <div class="password-wrapper">
+                  <input type="password" id="regPassword" class="form-input" placeholder="Min 6 characters" required
+                    minlength="6" autocomplete="new-password">
+                  <button type="button" class="password-toggle" onclick="togglePassword('regPassword', this)"
+                    aria-label="Toggle password">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="regConfirmPassword">Confirm Password</label>
+                <div class="password-wrapper">
+                  <input type="password" id="regConfirmPassword" class="form-input" placeholder="Re-enter password"
+                    required minlength="6" autocomplete="new-password">
+                  <button type="button" class="password-toggle" onclick="togglePassword('regConfirmPassword', this)"
+                    aria-label="Toggle password">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary auth-btn" id="registerBtn">
+              <span class="btn-text">Create Dining</span>
+              <span class="btn-loader">
+                <div class="spinner spinner-sm" style="border-color:rgba(255,255,255,0.3);border-top-color:white;">
+                </div>
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="auth-footer">
+          <p>Already have an account? <button type="button" onclick="showView('loginView')">Sign In</button></p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======== TOAST CONTAINER ======== -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Firebase SDK (compat for vanilla JS) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <!-- App Scripts -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/shared/utils.js"></script>
+  <script src="js/shared/notifications.js"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+    // Password toggle helper
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      btn.innerHTML = isPassword
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    }
+
+    // View toggle helper
+    function showView(viewId) {
+      document.querySelectorAll('.auth-view').forEach(v => v.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      // Clear errors
+      document.querySelectorAll('.auth-error').forEach(e => e.classList.remove('visible'));
+    }
+  </script>
+</body>
+
+</html>
