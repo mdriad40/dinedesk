@@ -30,6 +30,9 @@ const SettingsModule = {
     const autoToggle = document.getElementById('autoMealToggle');
     if (autoToggle) autoToggle.checked = !!s.autoMealEnabled;
 
+    const managerToggle = document.getElementById('managerMealToggle');
+    if (managerToggle) managerToggle.checked = !!s.managerMealEnabled;
+
     const bf = document.getElementById('breakfastDeadline');
     const lf = document.getElementById('lunchDeadline');
     const df = document.getElementById('dinnerDeadline');
@@ -55,6 +58,31 @@ const SettingsModule = {
     try {
       await db.ref(`dinings/${this.diningId}/settings/autoMealEnabled`).set(enabled);
       Notifications.toast('success', 'Auto Meal', enabled ? 'Auto meal system enabled.' : 'Auto meal system disabled.');
+    } catch (error) {
+      Notifications.toast('error', 'Error', 'Failed to update setting.');
+    }
+  },
+
+  /**
+   * Toggle manager meal visibility on dashboard
+   */
+  async toggleManagerMeal(enabled) {
+    try {
+      await db.ref(`dinings/${this.diningId}/settings/managerMealEnabled`).set(enabled);
+      
+      // If disabled, also turn OFF manager's own meal status in DB
+      if (!enabled) {
+        const userId = DineDesk.state.userId;
+        if (userId) {
+          await db.ref(`dinings/${this.diningId}/users/${userId}/mealStatus`).set({
+            breakfast: false,
+            lunch: false,
+            dinner: false
+          });
+        }
+      }
+
+      Notifications.toast('success', 'My Meal', enabled ? 'My meal section enabled.' : 'My meal section disabled.');
     } catch (error) {
       Notifications.toast('error', 'Error', 'Failed to update setting.');
     }

@@ -6,14 +6,15 @@
 .app-shell {
   display: flex;
   min-height: 100vh;
-  background: var(--bg-secondary);
+  background: linear-gradient(135deg, #ECFDF5 0%, #F0FDF9 50%, #ECFDF5 100%);
+  background-attachment: fixed;
 }
 
 /* ======== SIDEBAR (Desktop) ======== */
 .sidebar {
   width: var(--sidebar-width);
-  background: var(--bg-primary);
-  border-right: 1px solid var(--border-color);
+  background: linear-gradient(175deg, #064E3B 0%, #065F46 40%, #047857 100%);
+  border-right: none;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -22,6 +23,7 @@
   bottom: 0;
   z-index: var(--z-sticky);
   transition: transform var(--transition-slow);
+  box-shadow: 4px 0 24px rgba(4, 120, 87, 0.18);
 }
 
 .sidebar-brand {
@@ -29,19 +31,22 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(255,255,255,0.10);
 }
 
 .sidebar-brand-icon {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-lg);
-  background: var(--primary-600);
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
 }
 
 .sidebar-brand-icon svg {
@@ -52,13 +57,14 @@
 .sidebar-brand-text h3 {
   font-size: var(--font-md);
   font-weight: var(--weight-bold);
-  color: var(--text-primary);
+  color: #FFFFFF;
   line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .sidebar-brand-text span {
   font-size: var(--font-xs);
-  color: var(--text-tertiary);
+  color: rgba(255,255,255,0.55);
   font-weight: var(--weight-medium);
 }
 
@@ -72,9 +78,9 @@
 .sidebar-section-label {
   font-size: var(--font-xs);
   font-weight: var(--weight-semibold);
-  color: var(--text-tertiary);
+  color: rgba(255,255,255,0.40);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   padding: var(--space-2) var(--space-3);
   margin-top: var(--space-3);
 }
@@ -89,7 +95,7 @@
   gap: var(--space-3);
   padding: 0.625rem var(--space-3);
   border-radius: var(--radius-lg);
-  color: var(--text-secondary);
+  color: rgba(255,255,255,0.65);
   font-size: var(--font-base);
   font-weight: var(--weight-medium);
   cursor: pointer;
@@ -103,14 +109,16 @@
 }
 
 .nav-item:hover {
-  background: var(--gray-100);
-  color: var(--text-primary);
+  background: rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.95);
 }
 
 .nav-item.active {
-  background: var(--primary-50);
-  color: var(--primary-600);
+  background: rgba(255,255,255,0.18);
+  color: #FFFFFF;
   font-weight: var(--weight-semibold);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+  border: 1px solid rgba(255,255,255,0.15);
 }
 
 .nav-item svg {
@@ -121,8 +129,8 @@
 
 .nav-item .nav-badge {
   margin-left: auto;
-  background: var(--danger-100);
-  color: var(--danger-600);
+  background: rgba(239, 68, 68, 0.25);
+  color: #FCA5A5;
   font-size: 11px;
   font-weight: var(--weight-bold);
   padding: 1px 7px;
@@ -132,7 +140,7 @@
 /* ---- Sidebar Footer ---- */
 .sidebar-footer {
   padding: var(--space-4) var(--space-3);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid rgba(255,255,255,0.10);
 }
 
 .sidebar-user {
@@ -146,7 +154,7 @@
 }
 
 .sidebar-user:hover {
-  background: var(--gray-100);
+  background: rgba(255,255,255,0.10);
 }
 
 .sidebar-user-info {
@@ -157,12 +165,12 @@
 .sidebar-user-name {
   font-size: var(--font-sm);
   font-weight: var(--weight-semibold);
-  color: var(--text-primary);
+  color: rgba(255,255,255,0.92);
 }
 
 .sidebar-user-role {
   font-size: var(--font-xs);
-  color: var(--text-tertiary);
+  color: rgba(255,255,255,0.45);
 }
 
 /* ======== MAIN CONTENT ======== */
@@ -178,16 +186,17 @@
 .top-header {
   position: sticky;
   top: 0;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.12);
   padding: 0 var(--space-6);
   height: var(--header-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
   z-index: var(--z-sticky);
+  box-shadow: 0 2px 12px rgba(5, 150, 105, 0.06);
 }
 
 .header-left {
@@ -285,11 +294,14 @@
   left: 0;
   right: 0;
   height: var(--bottom-nav-height);
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(16, 185, 129, 0.15);
   z-index: var(--z-sticky);
   padding: 0;
   padding-bottom: env(safe-area-inset-bottom, 0);
+  box-shadow: 0 -4px 20px rgba(5, 150, 105, 0.08);
 }
 
 .bottom-nav-items {
@@ -467,7 +479,7 @@
 /* ======== OVERVIEW PAGE ======== */
 .overview-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }
@@ -670,4 +682,395 @@
 
 .due-amount.positive {
   color: var(--accent-600);
+}
+
+/* ======== MEMBER QUICK ACCESS NAVIGATION ======== */
+.member-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.member-nav-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.member-nav-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  background: var(--bg-secondary);
+}
+
+/* Glassmorphism Card Style */
+.member-nav-card.glass-card {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 4px 18px 0 rgba(31, 38, 135, 0.02);
+}
+
+.member-nav-card.glass-card:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 24px 0 rgba(31, 38, 135, 0.06);
+}
+
+/* Glassy Icon Wrapper */
+.glass-icon-wrapper {
+  flex-shrink: 0;
+}
+
+.glass-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all var(--transition-base);
+}
+
+/* Glass shine overlay */
+.glass-icon::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 45%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 55%
+  );
+  transform: rotate(30deg);
+  transition: transform 0.6s ease;
+}
+
+.member-nav-card:hover .glass-icon::after {
+  transform: translate(15%, 15%) rotate(30deg);
+}
+
+.glass-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.75;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.05));
+}
+
+.glass-primary {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.02));
+  color: var(--primary-600);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+.glass-accent {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.02));
+  color: var(--accent-600);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.glass-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.02));
+  color: var(--warning-600);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.glass-danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.02));
+  color: var(--danger-600);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.member-nav-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-nav-info h4 {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin-bottom: 1px;
+}
+
+.member-nav-info p {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member-nav-arrow {
+  color: var(--text-tertiary);
+  opacity: 0.5;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.member-nav-card:hover .member-nav-arrow {
+  opacity: 0.9;
+  transform: translateX(3px);
+}
+
+/* ======== MEAL CHART PAGE RESPONSIVENESS & DESIGN ======== */
+.meal-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.meal-chart-title h2 {
+  font-size: 24px; /* Increased to standard header size */
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.meal-chart-title p {
+  font-size: 13px; /* Increased subtitle size */
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.meal-chart-selectors {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Custom Dropdown Styling (DineDesk color matching) */
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+  user-select: none;
+}
+
+.custom-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  color: var(--primary-700);
+  background-color: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 12px;
+  height: 40px;
+  padding: 0 var(--space-4);
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-base);
+  min-width: 90px;
+}
+
+.custom-dropdown-trigger:hover {
+  background-color: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+.custom-dropdown.active .custom-dropdown-trigger {
+  background-color: rgba(16, 185, 129, 0.10);
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+/* Arrow indicator icon */
+.custom-dropdown-arrow {
+  width: 10px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-base);
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+/* Triangle icon like the screenshot */
+.custom-dropdown-arrow::before {
+  content: '▼';
+  font-size: 8px;
+}
+
+.custom-dropdown.active .custom-dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* Floating Option Dropdown Menu */
+.custom-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03);
+  padding: var(--space-1) 0;
+  z-index: 1000;
+  display: none;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.custom-dropdown.active .custom-dropdown-menu {
+  display: block;
+}
+
+/* Dropdown Menu Item */
+.custom-dropdown-item {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+  border-left: 3px solid transparent;
+}
+
+.custom-dropdown-item:hover {
+  background-color: var(--gray-50);
+}
+
+/* Selected option matching screenshot style */
+.custom-dropdown-item.selected {
+  background-color: rgba(16, 185, 129, 0.08);
+  border-left-color: var(--primary-500);
+  font-weight: var(--weight-bold);
+  color: var(--primary-700);
+  padding-left: 13px;
+}
+
+/* Meal Logs Card Header Styling */
+.meal-logs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.meal-logs-title {
+  font-size: 16px !important;
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  border-left: 3px solid var(--primary-500);
+  padding-left: var(--space-3);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.meal-logs-date-badge {
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  color: var(--primary-700);
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.06);
+}
+
+/* Meal Chart Table Details */
+.meal-chart-table th {
+  font-size: 12px !important; /* Increased header size */
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.05em;
+  padding: 12px !important;
+  text-transform: uppercase;
+}
+
+.meal-chart-table td {
+  font-size: 14px !important; /* Increased cell text size */
+  padding: 10px 12px !important;
+}
+
+.meal-chart-table td .avatar {
+  width: 32px !important; /* Increased avatar size */
+  height: 32px !important;
+  font-size: 11px !important;
+  font-weight: var(--weight-bold);
+}
+
+.meal-chart-table td .badge {
+  font-size: 11px !important; /* Increased badge size */
+  padding: 4px 10px !important;
+  border-radius: 8px !important;
+}
+
+/* Mobile specific styling for Meal Chart */
+@media (max-width: 767px) {
+  .meal-chart-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+  }
+  
+  .meal-chart-selectors {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr 1.2fr;
+    width: 100%;
+    gap: var(--space-2);
+  }
+
+  .meal-chart-selectors .custom-dropdown {
+    width: 100%;
+  }
+
+  .meal-chart-selectors .custom-dropdown-trigger {
+    width: 100% !important;
+    font-size: 12px;
+    height: 38px;
+    padding: 0 var(--space-3);
+  }
+
+  .meal-chart-table th {
+    font-size: 11px !important;
+    padding: 10px 8px !important;
+  }
+
+  .meal-chart-table td {
+    font-size: 13px !important;
+    padding: 8px 8px !important;
+  }
+
+  .meal-chart-table td .avatar {
+    width: 30px !important;
+    height: 30px !important;
+  }
 }

@@ -148,9 +148,9 @@ p {
 .overflow-hidden { overflow: hidden; }
 .overflow-auto { overflow: auto; }
 
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.text-left { text-align: left; }
+.text-center { text-align: center !important; }
+.text-right { text-align: right !important; }
+.text-left { text-align: left !important; }
 .truncate {
   overflow: hidden;
   text-overflow: ellipsis;

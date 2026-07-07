@@ -9,19 +9,19 @@ const OverviewModule = {
   init(diningId) {
     this.diningId = diningId;
 
+    const triggerRefresh = () => {
+      const isOverviewVisible = Router.currentPage === 'overview' || 
+                               (Router.currentPage === 'dashboard' && DineDesk.state.role === 'admin');
+      if (isOverviewVisible) {
+        this.refresh();
+      }
+    };
+
     // Multiple listeners will update the overview
-    db.ref(`dinings/${diningId}/users`).on('value', () => {
-      if (Router.currentPage === 'overview') this.refresh();
-    });
-    db.ref(`dinings/${diningId}/deposits`).on('value', () => {
-      if (Router.currentPage === 'overview') this.refresh();
-    });
-    db.ref(`dinings/${diningId}/bazar`).on('value', () => {
-      if (Router.currentPage === 'overview') this.refresh();
-    });
-    db.ref(`dinings/${diningId}/meals`).on('value', () => {
-      if (Router.currentPage === 'overview') this.refresh();
-    });
+    db.ref(`dinings/${diningId}/users`).on('value', triggerRefresh);
+    db.ref(`dinings/${diningId}/deposits`).on('value', triggerRefresh);
+    db.ref(`dinings/${diningId}/bazar`).on('value', triggerRefresh);
+    db.ref(`dinings/${diningId}/meals`).on('value', triggerRefresh);
   },
 
   /**
@@ -29,17 +29,29 @@ const OverviewModule = {
    */
   async refresh() {
     try {
-      const [usersSnap, depositsSnap, bazarSnap, mealsSnap] = await Promise.all([
+      if (Router.currentPage === 'overview') {
+        const overviewContent = document.getElementById('overviewContent');
+        const originalContainer = document.getElementById('overviewOriginalContainer');
+        if (overviewContent && originalContainer && overviewContent.parentElement !== originalContainer) {
+          originalContainer.appendChild(overviewContent);
+        }
+      }
+
+      const [usersSnap, depositsSnap, bazarSnap, mealsSnap, settingsSnap] = await Promise.all([
         db.ref(`dinings/${this.diningId}/users`).once('value'),
         db.ref(`dinings/${this.diningId}/deposits`).once('value'),
         db.ref(`dinings/${this.diningId}/bazar`).once('value'),
-        db.ref(`dinings/${this.diningId}/meals`).once('value')
+        db.ref(`dinings/${this.diningId}/meals`).once('value'),
+        db.ref(`dinings/${this.diningId}/settings`).once('value')
       ]);
 
       const users = usersSnap.val() || {};
       const deposits = depositsSnap.val() || {};
       const bazars = bazarSnap.val() || {};
       const meals = mealsSnap.val() || {};
+      const settings = settingsSnap.val() || {};
+
+      this.managerMealEnabled = !!settings.managerMealEnabled;
 
       // Calculate totals
       let totalDeposit = 0;
@@ -61,7 +73,11 @@ const OverviewModule = {
         Object.values(monthData).forEach(dayData => {
           Object.values(dayData).forEach(typeData => {
             if (typeof typeData === 'object') {
-              Object.values(typeData).forEach(count => {
+              Object.entries(typeData).forEach(([uId, count]) => {
+                const u = users[uId];
+                if (u && u.role === 'admin' && !this.managerMealEnabled) {
+                  return; // Skip manager meals
+                }
                 totalMeals += parseInt(count) || 0;
               });
             }
@@ -80,17 +96,29 @@ const OverviewModule = {
       // Render overview stats
       this.renderStats(totalDeposit, totalMeals, mealRate, totalBazar, netBalance);
 
-      // Render member stats table
-      this.renderMemberStats(users, mealRate);
+      const isAdmin = DineDesk.state.role === 'admin';
+      const memberStatsSection = document.getElementById('overviewMemberStatsSection');
+      const bazarHistorySection = document.getElementById('overviewBazarHistorySection');
+      const memberNavGrid = document.getElementById('memberNavGridSection');
 
-      // Render due list
-      this.renderDueList(users, mealRate);
+      if (memberStatsSection) {
+        memberStatsSection.style.display = isAdmin ? 'block' : 'none';
+      }
+      if (bazarHistorySection) {
+        bazarHistorySection.style.display = isAdmin ? 'block' : 'none';
+      }
+      if (memberNavGrid) {
+        memberNavGrid.style.display = isAdmin ? 'none' : 'block';
+        memberNavGrid.classList.toggle('hidden', isAdmin);
+      }
 
-      // Render bazar history
-      this.renderBazarHistory(bazars);
+      if (isAdmin) {
+        // Render member stats table
+        this.renderMemberStats(users, mealRate);
 
-      // Render charts
-      this.renderCharts(meals, bazars);
+        // Render bazar history
+        this.renderBazarHistory(bazars);
+      }
 
     } catch (error) {
       console.error('Overview refresh error:', error);
@@ -103,6 +131,8 @@ const OverviewModule = {
   renderStats(totalDeposit, totalMeals, mealRate, totalBazar, netBalance) {
     const container = document.getElementById('overviewStats');
     if (!container) return;
+
+    const totalCost = totalMeals * mealRate;
 
     container.innerHTML = `
       <div class="stat-card">
@@ -125,6 +155,15 @@ const OverviewModule = {
       </div>
       <div class="stat-card">
         <div class="stat-icon warning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">Total Bazar</div>
+          <div class="stat-value">${Utils.currency(totalBazar)}</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon primary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         </div>
         <div class="stat-info">
@@ -134,11 +173,11 @@ const OverviewModule = {
       </div>
       <div class="stat-card">
         <div class="stat-icon danger">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><path d="M16 8H8m8 4H8m4 4H8"/></svg>
         </div>
         <div class="stat-info">
-          <div class="stat-label">Total Bazar</div>
-          <div class="stat-value">${Utils.currency(totalBazar)}</div>
+          <div class="stat-label">Total Cost</div>
+          <div class="stat-value">${Utils.currency(totalCost)}</div>
         </div>
       </div>
       <div class="stat-card">
@@ -160,7 +199,12 @@ const OverviewModule = {
     const tbody = document.getElementById('memberStatsBody');
     if (!tbody) return;
 
-    const entries = Object.entries(users);
+    const entries = Object.entries(users).filter(([id, u]) => {
+      if (u.role === 'admin') {
+        return !!this.managerMealEnabled;
+      }
+      return true;
+    });
     if (entries.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" class="text-center p-6" style="color:var(--text-tertiary);">No members yet</td></tr>';
       return;
@@ -194,41 +238,6 @@ const OverviewModule = {
     }).join('');
   },
 
-  /**
-   * Render due list
-   */
-  renderDueList(users, mealRate) {
-    const container = document.getElementById('dueList');
-    if (!container) return;
-
-    const dueUsers = Object.entries(users)
-      .map(([id, u]) => {
-        const mealCost = Utils.calcMealCost(mealRate, u.totalMeals);
-        const balance = Utils.calcBalance(u.totalDeposit, mealCost);
-        return { id, name: u.name, balance };
-      })
-      .filter(u => u.balance < 0)
-      .sort((a, b) => a.balance - b.balance);
-
-    if (dueUsers.length === 0) {
-      container.innerHTML = `
-        <div class="text-center p-6" style="color:var(--text-tertiary);">
-          <p>🎉 No dues! Everyone is up to date.</p>
-        </div>
-      `;
-      return;
-    }
-
-    container.innerHTML = dueUsers.map(u => `
-      <div class="due-list-item">
-        <div class="flex items-center gap-3">
-          <div class="avatar avatar-sm">${Utils.initials(u.name)}</div>
-          <span style="font-weight:var(--weight-medium);">${u.name}</span>
-        </div>
-        <span class="due-amount">${Utils.currency(Math.abs(u.balance))}</span>
-      </div>
-    `).join('');
-  },
 
   /**
    * Render bazar history
@@ -271,48 +280,6 @@ const OverviewModule = {
     `).join('');
   },
 
-  /**
-   * Render charts
-   */
-  renderCharts(meals, bazars) {
-    // Meal trend chart (last 7 days bar chart)
-    const labels = [];
-    const data = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      const month = dateStr.substring(0, 7);
-      const day = dateStr.split('-')[2];
-
-      labels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
-
-      let dayTotal = 0;
-      const dayData = meals[month]?.[day];
-      if (dayData) {
-        Object.values(dayData).forEach(typeData => {
-          if (typeof typeData === 'object') {
-            Object.values(typeData).forEach(c => { dayTotal += parseInt(c) || 0; });
-          }
-        });
-      }
-      data.push(dayTotal);
-    }
-
-    Charts.bar('mealTrendChart', { labels, data, color: '#6366F1' });
-
-    // Expense donut chart
-    let totalBazar = 0;
-    let totalDeposit = DineDesk.state.totalDeposit || 0;
-    Object.values(bazars).forEach(b => { totalBazar += Utils.num(b.amount); });
-
-    const remaining = Math.max(0, totalDeposit - totalBazar);
-    Charts.donut('expenseChart', {
-      labels: ['Bazar Cost', 'Remaining'],
-      data: [totalBazar, remaining],
-      colors: ['#F59E0B', '#10B981']
-    });
-  },
 
   /**
    * Export report as printable HTML

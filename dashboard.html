@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,17 +13,221 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/dashboard.css">
   <link rel="stylesheet" href="css/responsive.css">
+  <style>
+    /* ====== Professional Polish Overrides ====== */
+
+    /* Section title bars with a subtle green left accent */
+    .section-title-bar h3 {
+      font-size: var(--font-lg) !important;
+      font-weight: var(--weight-bold);
+      letter-spacing: -0.02em;
+      color: #0F2E1E;
+    }
+
+    /* Cards — extra depth with green tint border */
+    .card {
+      border-color: #D1FAE5;
+      box-shadow: 0 1px 6px rgba(5, 150, 105, 0.06), 0 0 0 1px #D1FAE5;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(5, 150, 105, 0.10), 0 0 0 1px #A7F3D0;
+    }
+
+    /* Stat cards — colored top bar */
+    .stat-card {
+      border-color: #D1FAE5;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #059669, #14B8A6);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .stat-card:hover::before {
+      opacity: 1;
+    }
+
+    /* Settings card style refinement */
+    .settings-card {
+      border-color: #D1FAE5;
+      box-shadow: 0 1px 4px rgba(5, 150, 105, 0.05);
+    }
+
+    .settings-card h4 {
+      color: #064E3B;
+      font-weight: var(--weight-bold);
+    }
+
+    /* Header title */
+    .header-title {
+      font-weight: var(--weight-bold);
+      letter-spacing: -0.02em;
+      color: #0F2E1E;
+    }
+
+    /* Buttons — primary now uses green gradient */
+    .btn-primary {
+      background: linear-gradient(135deg, #059669, #047857);
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.28);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #047857, #065F46);
+      box-shadow: 0 6px 20px rgba(5, 150, 105, 0.38);
+    }
+
+    /* Accent button */
+    .btn-accent {
+      background: linear-gradient(135deg, #0D9488, #0F766E);
+      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.25);
+    }
+
+    .btn-accent:hover:not(:disabled) {
+      background: linear-gradient(135deg, #0F766E, #115E59);
+    }
+
+    /* Avatar — green primary bg */
+    .avatar {
+      background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+      color: #047857;
+      font-weight: var(--weight-bold);
+    }
+
+    /* Quick action cards */
+    .quick-action-card:hover {
+      border-color: #A7F3D0;
+      background: #F0FDF9;
+    }
+
+    /* Meal type tabs active */
+    .meal-type-tab.active {
+      background: linear-gradient(135deg, #059669, #047857);
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
+    }
+
+    /* User card hover */
+    .user-card:hover {
+      border-color: #A7F3D0;
+      box-shadow: 0 4px 16px rgba(5, 150, 105, 0.10);
+    }
+
+    /* Table row selection accent */
+    .meal-user-chip.selected {
+      border-color: #059669;
+      background: #ECFDF5;
+    }
+
+    /* Form focus green glow */
+    .form-input:focus {
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+    }
+
+    /* Scrollbar green tint */
+    ::-webkit-scrollbar-thumb {
+      background: #A7F3D0;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6EE7B7;
+    }
+
+    /* Sidebar brand icon - restore green */
+    .sidebar-brand-icon {
+      background: rgba(255, 255, 255, 0.18) !important;
+    }
+
+    /* Glass member nav cards */
+    .member-nav-card.glass-card {
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(16, 185, 129, 0.12);
+      box-shadow: 0 4px 18px 0 rgba(5, 150, 105, 0.05);
+    }
+
+    .member-nav-card.glass-card:hover {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(16, 185, 129, 0.25);
+      box-shadow: 0 8px 24px 0 rgba(5, 150, 105, 0.10);
+    }
+
+    /* Sync indicator dot color */
+    .sync-indicator.connected {
+      color: #059669;
+    }
+
+    /* Page section heading styles */
+    .page-header h2 {
+      letter-spacing: -0.03em;
+      color: #0F2E1E;
+    }
+
+    /* Bottom nav active indicator */
+    .bottom-nav-item.active {
+      color: #059669;
+    }
+
+    .bottom-nav-item.active::before {
+      background: #059669;
+    }
+
+    /* Toggle switch active = green */
+    .toggle-switch input:checked+.toggle-slider {
+      background: #059669;
+    }
+
+    /* Section title bar subtle underline */
+    .section-title-bar {
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.08);
+      margin-bottom: var(--space-4);
+    }
+
+    /* Notification panel border */
+    .notification-panel {
+      border-color: #D1FAE5;
+    }
+
+    /* Modal with green-tinted border */
+    .modal {
+      border: 1px solid rgba(16, 185, 129, 0.10);
+    }
+
+    /* Modal header border */
+    .modal-header {
+      border-bottom: 1px solid #ECFDF5;
+    }
+
+    .modal-footer {
+      border-top: 1px solid #ECFDF5;
+    }
+  </style>
 
   <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🍽</text></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🍽</text></svg>">
 </head>
+
 <body>
 
   <!-- ======== PAGE LOADER ======== -->
   <div id="pageLoader" class="page-loader">
     <div class="sidebar-brand-icon" style="width:56px;height:56px;">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+        <path d="M7 2v20" />
+        <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
       </svg>
     </div>
     <span class="brand-text">DineDesk</span>
@@ -37,8 +242,11 @@
       <!-- Brand -->
       <div class="sidebar-brand">
         <div class="sidebar-brand-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+            <path d="M7 2v20" />
+            <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
           </svg>
         </div>
         <div class="sidebar-brand-text">
@@ -52,15 +260,22 @@
         <div class="sidebar-section-label">Main</div>
 
         <button class="nav-item active" data-page="dashboard" onclick="DineDesk.router.navigate('dashboard')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
           </svg>
           Dashboard
         </button>
 
         <button class="nav-item" data-page="overview" onclick="DineDesk.router.navigate('overview')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="14" />
           </svg>
           Dining Overview
         </button>
@@ -70,32 +285,55 @@
           <div class="sidebar-section-label">Management</div>
 
           <button class="nav-item" data-page="users" onclick="DineDesk.router.navigate('users')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 00-3-3.87" />
+              <path d="M16 3.13a4 4 0 010 7.75" />
             </svg>
             Users
             <span id="userCountBadge" class="nav-badge" style="display:none;">0</span>
           </button>
 
           <button class="nav-item" data-page="meals" onclick="DineDesk.router.navigate('meals')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+              <path d="M7 2v20" />
+              <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
             </svg>
             Meals
           </button>
 
           <button class="nav-item" data-page="finance" onclick="DineDesk.router.navigate('finance')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23" />
+              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
             </svg>
             Finance
           </button>
 
           <button class="nav-item" data-page="settings" onclick="DineDesk.router.navigate('settings')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
             </svg>
             Settings
+          </button>
+
+          <button class="nav-item" id="navMyMeal" data-page="mymeal" onclick="DineDesk.router.navigate('mymeal')"
+            style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+              <path d="M7 2v20" />
+              <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
+            </svg>
+            My Meal
           </button>
         </div>
       </nav>
@@ -108,19 +346,30 @@
             <div class="sidebar-user-name" id="sidebarUserName">Loading...</div>
             <div class="sidebar-user-role" id="sidebarUserRole">—</div>
           </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-tertiary);">
-            <polyline points="6 9 12 15 18 9"/>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-tertiary);">
+            <polyline points="6 9 12 15 18 9" />
           </svg>
         </div>
         <!-- Dropdown for logout -->
-        <div id="userDropdown" class="dropdown-menu" style="bottom:calc(100% + 4px);top:auto;left:var(--space-3);right:var(--space-3);">
+        <div id="userDropdown" class="dropdown-menu"
+          style="bottom:calc(100% + 4px);top:auto;left:var(--space-3);right:var(--space-3);">
           <button class="dropdown-item" onclick="DineDesk.router.navigate('profile')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
             Profile
           </button>
           <div class="dropdown-divider"></div>
           <button class="dropdown-item danger" onclick="DineDesk.auth.logout()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
             Sign Out
           </button>
         </div>
@@ -137,35 +386,42 @@
       <header class="top-header">
         <div class="header-left">
           <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menu">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <h2 class="header-title" id="headerTitle">Dashboard</h2>
+          <div>
+            <h2 class="header-title" id="headerTitle">Dashboard</h2>
+            <p class="header-subtitle" id="headerSubtitle"
+              style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 2px; display: none;"></p>
+          </div>
         </div>
         <div class="header-right">
-          <!-- Sync Indicator -->
-          <div class="sync-indicator connected" id="syncIndicator">
-            <div class="sync-dot"></div>
-            <span>Live</span>
-          </div>
           <!-- Notifications -->
           <div class="dropdown" id="notifDropdown">
             <button class="header-icon-btn" onclick="toggleNotifications()" aria-label="Notifications">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 01-3.46 0" />
               </svg>
               <span id="notifBadge" class="notif-count" style="display:none;">0</span>
             </button>
             <div id="notifPanel" class="notification-panel">
               <div class="notification-panel-header">
                 <h4>Notifications</h4>
-                <button class="btn btn-ghost btn-sm" onclick="DineDesk.notifications.markAllRead()">Mark all read</button>
+                <button class="btn btn-ghost btn-sm" onclick="DineDesk.notifications.markAllRead()">Mark all
+                  read</button>
               </div>
               <div id="notifList" class="notification-list">
                 <div class="empty-state" style="padding:var(--space-8) var(--space-4);">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)"
+                    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 01-3.46 0" />
                   </svg>
                   <p style="margin-top:var(--space-2);font-size:var(--font-sm);">No notifications yet</p>
                 </div>
@@ -180,28 +436,27 @@
 
         <!-- ======== DASHBOARD PAGE ======== -->
         <section id="page-dashboard" class="page-section active">
-          <!-- Stats Grid (filled by JS) -->
-          <div id="dashboardStats" class="stats-grid"></div>
+          <!-- Manager Dining Overview Section (visible to Admin only) -->
+          <div id="managerOverviewSection" class="hidden" style="margin-bottom: var(--space-6);"></div>
 
-          <!-- Meal Toggles (User) -->
-          <div id="mealTogglesSection">
-            <div class="section-title-bar">
-              <h3>Today's Meals</h3>
-              <div class="sync-indicator connected" style="font-size:var(--font-xs);">
-                <div class="sync-dot"></div>
-                <span id="mealDateDisplay">Loading...</span>
+          <div id="userDashboardContent">
+            <!-- Stats Grid (filled by JS) -->
+            <div id="dashboardStats" class="stats-grid"></div>
+
+            <!-- Meal Toggles (User) -->
+            <div id="mealTogglesSection">
+              <div class="section-title-bar">
+                <h3>Today's Meals</h3>
+                <div class="sync-indicator connected" style="font-size:var(--font-xs);">
+                  <div class="sync-dot"></div>
+                  <span id="mealDateDisplay">Loading...</span>
+                </div>
               </div>
+              <div id="mealTogglesGrid" class="meal-toggles-grid"></div>
             </div>
-            <div id="mealTogglesGrid" class="meal-toggles-grid"></div>
           </div>
 
-          <!-- Admin Quick Actions -->
-          <div id="adminQuickActions" class="hidden">
-            <div class="section-title-bar">
-              <h3>Quick Actions</h3>
-            </div>
-            <div class="quick-actions" id="quickActionsGrid"></div>
-          </div>
+
 
           <!-- Recent Activity -->
           <div class="section-title-bar mt-6">
@@ -211,8 +466,10 @@
             <div id="recentActivity" class="timeline">
               <div class="empty-state" style="padding:var(--space-6);">
                 <div class="empty-state-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
                   </svg>
                 </div>
                 <h3>No Recent Activity</h3>
@@ -231,14 +488,19 @@
             </div>
             <div class="flex gap-3">
               <div class="search-input-wrapper">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
-                <input type="text" class="form-input" id="userSearchInput" placeholder="Search members..." oninput="DineDesk.users.filterUsers(this.value)">
+                <input type="text" class="form-input" id="userSearchInput" placeholder="Search members..."
+                  oninput="DineDesk.users.filterUsers(this.value)">
               </div>
               <button class="btn btn-primary" onclick="DineDesk.users.showAddModal()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
                 Add Member
               </button>
@@ -247,7 +509,12 @@
           <div id="usersGrid" class="users-grid">
             <div class="empty-state">
               <div class="empty-state-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                  <path d="M16 3.13a4 4 0 010 7.75" />
+                </svg>
               </div>
               <h3>No Members Yet</h3>
               <p>Add members to start managing your dining.</p>
@@ -271,9 +538,12 @@
           </div>
 
           <div id="mealTypeTabs" class="meal-type-tabs">
-            <button class="meal-type-tab active" data-type="breakfast" onclick="DineDesk.meals.selectType('breakfast')">☀️ Breakfast</button>
-            <button class="meal-type-tab" data-type="lunch" onclick="DineDesk.meals.selectType('lunch')">🍱 Lunch</button>
-            <button class="meal-type-tab" data-type="dinner" onclick="DineDesk.meals.selectType('dinner')">🌙 Dinner</button>
+            <button class="meal-type-tab active" data-type="breakfast"
+              onclick="DineDesk.meals.selectType('breakfast')">☀️ Breakfast</button>
+            <button class="meal-type-tab" data-type="lunch" onclick="DineDesk.meals.selectType('lunch')">🍱
+              Lunch</button>
+            <button class="meal-type-tab" data-type="dinner" onclick="DineDesk.meals.selectType('dinner')">🌙
+              Dinner</button>
           </div>
 
           <!-- Bulk Actions -->
@@ -288,11 +558,13 @@
             <div class="flex items-center gap-3">
               <div class="flex items-center gap-2">
                 <label class="form-label" style="margin:0;white-space:nowrap;">Meals:</label>
-                <input type="number" id="bulkMealCount" class="form-input meal-count-input" value="1" min="0" max="10" style="width:64px;">
+                <input type="number" id="bulkMealCount" class="form-input meal-count-input" value="1" min="0" max="10"
+                  style="width:64px;">
               </div>
               <button class="btn btn-primary" onclick="DineDesk.meals.saveBulkMeals()" id="saveMealsBtn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
                 </svg>
                 Save Meals
               </button>
@@ -303,7 +575,11 @@
           <div id="mealUsersGrid" class="meal-users-grid">
             <div class="empty-state">
               <div class="empty-state-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+                  <path d="M7 2v20" />
+                  <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
+                </svg>
               </div>
               <h3>No Members</h3>
               <p>Add members first to manage meals.</p>
@@ -329,20 +605,26 @@
           <!-- Finance Action Buttons -->
           <div class="finance-actions">
             <button class="btn btn-primary" onclick="DineDesk.finance.showDepositModal()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               Add Deposit
             </button>
             <button class="btn btn-accent" onclick="DineDesk.finance.showBazarModal()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 01-8 0" />
               </svg>
               Add Bazar Cost
             </button>
             <button class="btn btn-danger" onclick="DineDesk.finance.showDeductModal()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"/>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               Deduct Balance
             </button>
@@ -355,7 +637,9 @@
           <div class="section-title-bar mt-6">
             <h3>Transaction History</h3>
             <div class="flex gap-2">
-              <select id="financeFilter" class="form-input form-select" style="width:140px;padding:var(--space-2) var(--space-3);font-size:var(--font-sm);" onchange="DineDesk.finance.filterTransactions(this.value)">
+              <select id="financeFilter" class="form-input form-select"
+                style="width:140px;padding:var(--space-2) var(--space-3);font-size:var(--font-sm);"
+                onchange="DineDesk.finance.filterTransactions(this.value)">
                 <option value="all">All Types</option>
                 <option value="deposit">Deposits</option>
                 <option value="deduction">Deductions</option>
@@ -367,7 +651,10 @@
             <div id="transactionHistory" class="timeline">
               <div class="empty-state" style="padding:var(--space-6);">
                 <div class="empty-state-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                  </svg>
                 </div>
                 <h3>No Transactions</h3>
                 <p>Financial transactions will appear here.</p>
@@ -378,82 +665,175 @@
 
         <!-- ======== OVERVIEW PAGE ======== -->
         <section id="page-overview" class="page-section">
-          <div class="page-header">
-            <h2>Dining Overview</h2>
-            <p>Complete dining statistics and reports</p>
-          </div>
 
-          <!-- Overview Stats -->
-          <div id="overviewStats" class="overview-stats"></div>
+          <div id="overviewOriginalContainer">
+            <div id="overviewContent">
+              <!-- Overview Stats -->
+              <div id="overviewStats" class="overview-stats"></div>
 
-          <!-- Charts Row -->
-          <div class="grid" style="grid-template-columns:1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-4);">
-            <div class="chart-container">
-              <div class="chart-header">
-                <h4>Meal Trends</h4>
-                <select id="chartPeriod" class="form-input form-select" style="width:120px;padding:4px 8px;font-size:var(--font-xs);">
-                  <option value="7">Last 7 Days</option>
-                  <option value="30" selected>Last 30 Days</option>
-                </select>
-              </div>
-              <canvas id="mealTrendChart" class="chart-canvas"></canvas>
-            </div>
-            <div class="chart-container">
-              <div class="chart-header">
-                <h4>Expense Breakdown</h4>
-              </div>
-              <canvas id="expenseChart" class="chart-canvas"></canvas>
-            </div>
-          </div>
-
-          <!-- User-wise Stats Table -->
-          <div class="section-title-bar">
-            <h3>Member Statistics</h3>
-            <button class="btn btn-secondary btn-sm" onclick="DineDesk.overview.exportReport()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Export
-            </button>
-          </div>
-          <div class="table-wrapper">
-            <table class="data-table" id="memberStatsTable">
-              <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Total Meals</th>
-                  <th>Deposit</th>
-                  <th>Meal Cost</th>
-                  <th>Balance</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="memberStatsBody">
-                <tr><td colspan="6" class="text-center p-6" style="color:var(--text-tertiary);">Loading...</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Due List -->
-          <div class="section-title-bar mt-6">
-            <h3>Due List</h3>
-          </div>
-          <div class="card" id="dueListCard">
-            <div id="dueList"></div>
-          </div>
-
-          <!-- Bazar History -->
-          <div class="section-title-bar mt-6">
-            <h3>Bazar History</h3>
-          </div>
-          <div class="card">
-            <div id="bazarHistory" class="timeline">
-              <div class="empty-state" style="padding:var(--space-6);">
-                <div class="empty-state-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+              <!-- Member Navigation Grid -->
+              <div id="memberNavGridSection" class="hidden mt-6" style="margin-bottom: var(--space-6);">
+                <div class="section-title-bar">
+                  <h3>Quick Access</h3>
                 </div>
-                <h3>No Bazar Records</h3>
-                <p>Bazar expenses will appear here.</p>
+                <div class="member-nav-grid">
+                  <!-- Meal Chart Card -->
+                  <div class="member-nav-card glass-card" onclick="DineDesk.router.navigate('mealchart')">
+                    <div class="glass-icon-wrapper">
+                      <div class="glass-icon glass-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          <line x1="9" y1="9" x2="15" y2="9" />
+                          <line x1="9" y1="13" x2="15" y2="13" />
+                          <line x1="9" y1="17" x2="13" y2="17" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="member-nav-info">
+                      <h4>Meal Chart</h4>
+                      <p>View daily meals and charts</p>
+                    </div>
+                    <div class="member-nav-arrow">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Bazar Card -->
+                  <div class="member-nav-card glass-card" onclick="DineDesk.router.navigate('bazar')">
+                    <div class="glass-icon-wrapper">
+                      <div class="glass-icon glass-accent">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                          <line x1="3" y1="6" x2="21" y2="6" />
+                          <path d="M16 10a4 4 0 01-8 0" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="member-nav-info">
+                      <h4>Bazar</h4>
+                      <p>Check bazar costs and records</p>
+                    </div>
+                    <div class="member-nav-arrow">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Summary Card -->
+                  <div class="member-nav-card glass-card" onclick="DineDesk.router.navigate('summary')">
+                    <div class="glass-icon-wrapper">
+                      <div class="glass-icon glass-warning">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="18" y1="20" x2="18" y2="10" />
+                          <line x1="12" y1="20" x2="12" y2="4" />
+                          <line x1="6" y1="20" x2="6" y2="14" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="member-nav-info">
+                      <h4>Summary</h4>
+                      <p>Monthly overview & meal costs</p>
+                    </div>
+                    <div class="member-nav-arrow">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- History Card -->
+                  <div class="member-nav-card glass-card" onclick="DineDesk.router.navigate('history')">
+                    <div class="glass-icon-wrapper">
+                      <div class="glass-icon glass-danger">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="member-nav-info">
+                      <h4>History</h4>
+                      <p>Your meal and deposit timeline</p>
+                    </div>
+                    <div class="member-nav-arrow">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Admin Quick Actions -->
+              <div id="adminQuickActions" class="hidden">
+                <div class="section-title-bar mt-6">
+                  <h3>Quick Actions</h3>
+                </div>
+                <div class="quick-actions" id="quickActionsGrid"></div>
+                <!-- User-wise Stats Table -->
+                <div id="overviewMemberStatsSection">
+                  <div class="section-title-bar">
+                    <h3>Member Statistics</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="DineDesk.overview.exportReport()">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 01-2-2H5a2 2 0 01-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Export
+                    </button>
+                  </div>
+                  <div class="table-wrapper">
+                    <table class="data-table" id="memberStatsTable">
+                      <thead>
+                        <tr>
+                          <th>Member</th>
+                          <th>Total Meals</th>
+                          <th>Deposit</th>
+                          <th>Meal Cost</th>
+                          <th>Balance</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody id="memberStatsBody">
+                        <tr>
+                          <td colspan="6" class="text-center p-6" style="color:var(--text-tertiary);">Loading...</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+
+                <!-- Bazar History -->
+                <div id="overviewBazarHistorySection">
+                  <div class="section-title-bar mt-6">
+                    <h3>Bazar History</h3>
+                  </div>
+                  <div class="card">
+                    <div id="bazarHistory" class="timeline">
+                      <div class="empty-state" style="padding:var(--space-6);">
+                        <div class="empty-state-icon">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                            <line x1="3" y1="6" x2="21" y2="6" />
+                            <path d="M16 10a4 4 0 01-8 0" />
+                          </svg>
+                        </div>
+                        <h3>No Bazar Records</h3>
+                        <p>Bazar expenses will appear here.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -469,7 +849,8 @@
           <!-- Auto Meal Settings -->
           <div class="settings-card">
             <h4>⏰ Auto Meal System</h4>
-            <p style="color:var(--text-secondary);font-size:var(--font-sm);margin-bottom:var(--space-4);">Set deadlines for meal editing. After the deadline, meals become locked.</p>
+            <p style="color:var(--text-secondary);font-size:var(--font-sm);margin-bottom:var(--space-4);">Set deadlines
+              for meal editing. After the deadline, meals become locked.</p>
 
             <div class="settings-item">
               <div class="settings-item-info">
@@ -482,13 +863,26 @@
               </label>
             </div>
 
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <h5>My Meal</h5>
+                <p>Toggle manager meals (shows My Meal on dashboard, hides global overview)</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="managerMealToggle"
+                  onchange="DineDesk.settings.toggleManagerMeal(this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
             <div id="autoMealDeadlines">
               <div class="settings-item">
                 <div class="settings-item-info">
                   <h5>☀️ Breakfast Deadline</h5>
                   <p>Users can edit breakfast until this time</p>
                 </div>
-                <input type="time" id="breakfastDeadline" class="form-input time-input" value="04:00" onchange="DineDesk.settings.saveDeadline('breakfast', this.value)">
+                <input type="time" id="breakfastDeadline" class="form-input time-input" value="04:00"
+                  onchange="DineDesk.settings.saveDeadline('breakfast', this.value)">
               </div>
 
               <div class="settings-item">
@@ -496,7 +890,8 @@
                   <h5>🍱 Lunch Deadline</h5>
                   <p>Users can edit lunch until this time</p>
                 </div>
-                <input type="time" id="lunchDeadline" class="form-input time-input" value="10:00" onchange="DineDesk.settings.saveDeadline('lunch', this.value)">
+                <input type="time" id="lunchDeadline" class="form-input time-input" value="10:00"
+                  onchange="DineDesk.settings.saveDeadline('lunch', this.value)">
               </div>
 
               <div class="settings-item">
@@ -504,7 +899,8 @@
                   <h5>🌙 Dinner Deadline</h5>
                   <p>Users can edit dinner until this time</p>
                 </div>
-                <input type="time" id="dinnerDeadline" class="form-input time-input" value="16:00" onchange="DineDesk.settings.saveDeadline('dinner', this.value)">
+                <input type="time" id="dinnerDeadline" class="form-input time-input" value="16:00"
+                  onchange="DineDesk.settings.saveDeadline('dinner', this.value)">
               </div>
             </div>
           </div>
@@ -546,47 +942,260 @@
             </div>
           </div>
 
-          <div id="profileStats" class="profile-stats"></div>
+          <!-- Member Stats & History (Hidden for members) -->
+          <div id="profileStatsAndHistory">
+            <div id="profileStats" class="profile-stats"></div>
 
-          <!-- Deposit History -->
-          <div class="section-title-bar">
-            <h3>Deposit History</h3>
-          </div>
-          <div class="card">
-            <div id="profileDepositHistory" class="timeline">
-              <div class="empty-state" style="padding:var(--space-6);">
-                <div class="empty-state-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <!-- Deposit History -->
+            <div class="section-title-bar">
+              <h3>Deposit History</h3>
+            </div>
+            <div class="card">
+              <div id="profileDepositHistory" class="timeline">
+                <div class="empty-state" style="padding:var(--space-6);">
+                  <div class="empty-state-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <line x1="12" y1="1" x2="12" y2="23" />
+                      <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                    </svg>
+                  </div>
+                  <h3>No Deposits</h3>
+                  <p>Your deposit history will appear here.</p>
                 </div>
-                <h3>No Deposits</h3>
-                <p>Your deposit history will appear here.</p>
+              </div>
+            </div>
+
+            <!-- Meal History -->
+            <div class="section-title-bar mt-6">
+              <h3>Meal History</h3>
+            </div>
+            <div class="card">
+              <div id="profileMealHistory">
+                <div class="empty-state" style="padding:var(--space-6);">
+                  <div class="empty-state-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+                      <path d="M7 2v20" />
+                      <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
+                    </svg>
+                  </div>
+                  <h3>No Meal Records</h3>
+                  <p>Your meal history will appear here.</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Meal History -->
-          <div class="section-title-bar mt-6">
-            <h3>Meal History</h3>
-          </div>
-          <div class="card">
-            <div id="profileMealHistory">
-              <div class="empty-state" style="padding:var(--space-6);">
-                <div class="empty-state-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
-                </div>
-                <h3>No Meal Records</h3>
-                <p>Your meal history will appear here.</p>
+          <!-- Profile Settings & Password Change (Visible for members) -->
+          <div id="profileSettingsSection" class="hidden" style="margin-top: var(--space-6);">
+            <!-- Update Profile Info Card -->
+            <div class="card" style="margin-bottom: var(--space-6);">
+              <h4 style="margin-bottom: var(--space-4);">👤 Update Profile</h4>
+              <div class="form-group">
+                <label class="form-label" for="profileNameInput">Full Name</label>
+                <input type="text" id="profileNameInput" class="form-input" placeholder="Enter your full name">
               </div>
+              <div class="form-group">
+                <label class="form-label" for="profilePhoneInput">Phone Number</label>
+                <input type="text" id="profilePhoneInput" class="form-input" placeholder="Enter phone number">
+              </div>
+              <button class="btn btn-primary" onclick="DineDesk.history.updateProfileInfo()">Save Profile</button>
+            </div>
+
+            <!-- Change Password Card -->
+            <div class="card" style="margin-bottom: var(--space-6);">
+              <h4 style="margin-bottom: var(--space-4);">🔒 Change Password</h4>
+              <div class="form-group">
+                <label class="form-label" for="profileNewPasswordInput">New Password</label>
+                <input type="password" id="profileNewPasswordInput" class="form-input"
+                  placeholder="Enter new password (min 6 chars)">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="profileConfirmPasswordInput">Confirm New Password</label>
+                <input type="password" id="profileConfirmPasswordInput" class="form-input"
+                  placeholder="Confirm new password">
+              </div>
+              <button class="btn btn-primary" onclick="DineDesk.history.changePassword()">Update Password</button>
             </div>
           </div>
 
           <div class="mt-8">
             <button class="btn btn-danger btn-block" onclick="DineDesk.auth.logout()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
               </svg>
               Sign Out
             </button>
+          </div>
+        </section>
+
+        <!-- ======== MY MEAL PAGE (Manager) ======== -->
+        <section id="page-mymeal" class="page-section">
+          <div class="page-header">
+            <h2>My Meal</h2>
+            <p>Manage your personal daily meals</p>
+          </div>
+          <div id="mymealContainer"></div>
+        </section>
+
+        <!-- ======== MEAL CHART PAGE ======== -->
+        <section id="page-mealchart" class="page-section">
+          <!-- Header and Selectors -->
+          <div class="meal-chart-header">
+            <div class="meal-chart-title">
+              <h2>Meal Chart</h2>
+              <p>Daily summary and detailed meal logs</p>
+            </div>
+            <!-- Selectors -->
+            <div class="meal-chart-selectors">
+              <!-- Day Select -->
+              <div class="custom-dropdown" id="mealChartDayDropdown">
+                <button class="custom-dropdown-trigger"
+                  onclick="event.stopPropagation(); this.parentElement.classList.toggle('active')">
+                  <span id="mealChartDayValue">Loading...</span>
+                  <div class="custom-dropdown-arrow"></div>
+                </button>
+                <div class="custom-dropdown-menu" id="mealChartDayMenu"></div>
+              </div>
+
+              <!-- Month Select -->
+              <div class="custom-dropdown" id="mealChartMonthDropdown">
+                <button class="custom-dropdown-trigger"
+                  onclick="event.stopPropagation(); this.parentElement.classList.toggle('active')">
+                  <span id="mealChartMonthValue">Loading...</span>
+                  <div class="custom-dropdown-arrow"></div>
+                </button>
+                <div class="custom-dropdown-menu" id="mealChartMonthMenu"></div>
+              </div>
+
+              <!-- Year Select -->
+              <div class="custom-dropdown" id="mealChartYearDropdown">
+                <button class="custom-dropdown-trigger"
+                  onclick="event.stopPropagation(); this.parentElement.classList.toggle('active')">
+                  <span id="mealChartYearValue">Loading...</span>
+                  <div class="custom-dropdown-arrow"></div>
+                </button>
+                <div class="custom-dropdown-menu" id="mealChartYearMenu"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed Table Area -->
+          <div class="card">
+            <div class="meal-logs-header">
+              <h3 class="meal-logs-title">Daily Meal Logs</h3>
+              <span id="mealChartDetailsDate" class="meal-logs-date-badge">Loading date...</span>
+            </div>
+            <div class="table-wrapper"
+              style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: var(--space-4);">
+              <table class="data-table meal-chart-table">
+                <thead>
+                  <tr>
+                    <th>Member</th>
+                    <th class="text-center" style="width: 120px;">Breakfast</th>
+                    <th class="text-center" style="width: 120px;">Lunch</th>
+                    <th class="text-center" style="width: 120px;">Dinner</th>
+                    <th class="text-center" style="width: 80px;">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="mealChartDetailsBody">
+                  <tr>
+                    <td colspan="5" class="text-center p-6" style="color: var(--text-tertiary);">Loading meals...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======== BAZAR PAGE ======== -->
+        <section id="page-bazar" class="page-section">
+
+          <!-- Header + Selectors -->
+          <div class="bazar-history-header">
+            <div class="bazar-history-title">
+              <h2>Bazar History</h2>
+              <p>Monthly grocery &amp; market expense records</p>
+            </div>
+            <!-- Year / Month Selectors -->
+            <div class="bazar-history-selectors">
+              <!-- Month Select -->
+              <div class="custom-dropdown" id="bazarHistoryMonthDropdown">
+                <button class="custom-dropdown-trigger"
+                  onclick="event.stopPropagation(); this.parentElement.classList.toggle('active')">
+                  <span id="bazarHistoryMonthValue">Loading...</span>
+                  <div class="custom-dropdown-arrow"></div>
+                </button>
+                <div class="custom-dropdown-menu" id="bazarHistoryMonthMenu"></div>
+              </div>
+
+              <!-- Year Select -->
+              <div class="custom-dropdown" id="bazarHistoryYearDropdown">
+                <button class="custom-dropdown-trigger"
+                  onclick="event.stopPropagation(); this.parentElement.classList.toggle('active')">
+                  <span id="bazarHistoryYearValue">Loading...</span>
+                  <div class="custom-dropdown-arrow"></div>
+                </button>
+                <div class="custom-dropdown-menu" id="bazarHistoryYearMenu"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monthly Summary Banner -->
+          <div class="bazar-monthly-summary" id="bazarMonthlySummary" style="display:none;">
+            <div class="bazar-summary-left">
+              <div class="bazar-summary-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <path d="M16 10a4 4 0 01-8 0" />
+                </svg>
+              </div>
+              <div class="bazar-summary-text">
+                <span class="bazar-summary-label">Total Bazar Expense</span>
+                <span class="bazar-summary-period" id="bazarMonthLabel">—</span>
+              </div>
+            </div>
+            <div class="bazar-summary-amount" id="bazarMonthTotal">৳0</div>
+          </div>
+
+          <!-- Day Cards List -->
+          <div id="bazarHistoryList" class="bazar-history-list">
+            <!-- Rendered by BazarHistoryModule -->
+            <div class="bazar-skeleton">
+              <div class="bazar-skeleton-card">
+                <div class="bazar-skeleton-line wide"></div>
+                <div class="bazar-skeleton-line narrow"></div>
+              </div>
+              <div class="bazar-skeleton-card">
+                <div class="bazar-skeleton-line wide"></div>
+                <div class="bazar-skeleton-line narrow"></div>
+              </div>
+              <div class="bazar-skeleton-card">
+                <div class="bazar-skeleton-line wide"></div>
+                <div class="bazar-skeleton-line narrow"></div>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ======== SUMMARY PAGE ======== -->
+        <section id="page-summary" class="page-section">
+          <div class="card">
+            <h3>Summary</h3>
+            <p style="color: var(--text-secondary); margin-top: 8px;">Content coming soon...</p>
+          </div>
+        </section>
+
+        <!-- ======== HISTORY PAGE ======== -->
+        <section id="page-history" class="page-section">
+          <div class="card">
+            <h3>History</h3>
+            <p style="color: var(--text-secondary); margin-top: 8px;">Content coming soon...</p>
           </div>
         </section>
 
@@ -597,34 +1206,60 @@
     <nav class="bottom-nav" id="bottomNav">
       <div class="bottom-nav-items">
         <button class="bottom-nav-item active" data-page="dashboard" onclick="DineDesk.router.navigate('dashboard')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
           </svg>
           <span>Home</span>
         </button>
-        <button class="bottom-nav-item" data-page="meals" onclick="DineDesk.router.navigate(DineDesk.state.role==='admin'?'meals':'overview')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
+        <button class="bottom-nav-item" data-page="meals"
+          onclick="DineDesk.router.navigate(DineDesk.state.role==='admin'?'meals':'overview')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+            <path d="M7 2v20" />
+            <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
           </svg>
           <span id="bottomNavMealsLabel">Meals</span>
         </button>
-        <button class="bottom-nav-item" data-page="finance" onclick="DineDesk.router.navigate(DineDesk.state.role==='admin'?'finance':'overview')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+        <button class="bottom-nav-item" data-page="finance"
+          onclick="DineDesk.router.navigate(DineDesk.state.role==='admin'?'finance':'overview')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
           </svg>
           <span>Finance</span>
         </button>
         <button class="bottom-nav-item" data-page="overview" onclick="DineDesk.router.navigate('overview')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="14" />
           </svg>
           <span>Overview</span>
         </button>
         <button class="bottom-nav-item" data-page="profile" onclick="DineDesk.router.navigate('profile')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
           </svg>
           <span>Profile</span>
+        </button>
+        <button class="bottom-nav-item" id="bottomNavMyMeal" data-page="mymeal"
+          onclick="DineDesk.router.navigate('mymeal')" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+            <path d="M7 2v20" />
+            <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
+          </svg>
+          <span>My Meal</span>
         </button>
       </div>
     </nav>
@@ -639,7 +1274,11 @@
       <div class="modal-header">
         <h3 id="userModalTitle">Add Member</h3>
         <button class="modal-close" onclick="DineDesk.users.closeModal()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
       </div>
       <div class="modal-body">
@@ -664,7 +1303,8 @@
           </div>
           <div class="form-group" id="userPasswordGroup">
             <label class="form-label">Password</label>
-            <input type="password" class="form-input" id="userPasswordInput" placeholder="Min 6 characters" minlength="6" required>
+            <input type="password" class="form-input" id="userPasswordInput" placeholder="Min 6 characters"
+              minlength="6" required>
           </div>
         </form>
       </div>
@@ -683,7 +1323,11 @@
       <div class="modal-header">
         <h3 id="depositModalTitle">Add Deposit</h3>
         <button class="modal-close" onclick="closeModal('depositModal')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
       </div>
       <div class="modal-body">
@@ -717,7 +1361,11 @@
       <div class="modal-header">
         <h3>Deduct Balance</h3>
         <button class="modal-close" onclick="closeModal('deductModal')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
       </div>
       <div class="modal-body">
@@ -751,7 +1399,11 @@
       <div class="modal-header">
         <h3>Add Bazar Cost</h3>
         <button class="modal-close" onclick="closeModal('bazarModal')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
       </div>
       <div class="modal-body">
@@ -768,7 +1420,8 @@
           </div>
           <div class="form-group">
             <label class="form-label">Items Description</label>
-            <textarea class="form-input" id="bazarItemsInput" placeholder="e.g. Rice, Fish, Oil, Vegetables..." required></textarea>
+            <textarea class="form-input" id="bazarItemsInput" placeholder="e.g. Rice, Fish, Oil, Vegetables..."
+              required></textarea>
           </div>
           <div class="form-group">
             <label class="form-label">Shopper Name</label>
@@ -788,8 +1441,11 @@
     <div class="modal">
       <div class="modal-body" style="padding:var(--space-8) var(--space-6);">
         <div class="confirm-icon danger" id="confirmIcon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
         </div>
         <h3 id="confirmTitle">Are you sure?</h3>
@@ -822,6 +1478,8 @@
   <script src="js/admin/settings.js"></script>
   <script src="js/user/dashboard.js"></script>
   <script src="js/user/history.js"></script>
+  <script src="js/user/mealchart.js"></script>
+  <script src="js/user/bazarHistory.js"></script>
   <script src="js/shared/overview.js"></script>
   <script src="js/app.js"></script>
 
@@ -844,19 +1502,25 @@
     }
 
     // Close sidebar user dropdown
-    document.getElementById('sidebarUserBtn').addEventListener('click', function() {
+    document.getElementById('sidebarUserBtn').addEventListener('click', function () {
       document.getElementById('userDropdown').classList.toggle('active');
     });
 
     // Close dropdowns on outside click
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
       if (!e.target.closest('#sidebarUserBtn') && !e.target.closest('#userDropdown')) {
         document.getElementById('userDropdown').classList.remove('active');
       }
       if (!e.target.closest('#notifDropdown')) {
         document.getElementById('notifPanel').classList.remove('active');
       }
+      if (!e.target.closest('.custom-dropdown')) {
+        document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+          dropdown.classList.remove('active');
+        });
+      }
     });
   </script>
 </body>
+
 </html>

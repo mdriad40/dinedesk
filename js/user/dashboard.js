@@ -19,12 +19,14 @@ const UserDashboard = {
       this.userData = snap.val();
       this.renderStats();
       this.renderMealToggles();
+      this.updateMyMealVisibility();
     });
 
     // Listen to settings for deadlines
     db.ref(`dinings/${diningId}/settings`).on('value', (snap) => {
       this.settings = snap.val() || {};
       this.renderMealToggles();
+      this.updateMyMealVisibility();
     });
 
     // Start countdown timer
@@ -257,9 +259,9 @@ const UserDashboard = {
       container.innerHTML = logs.map(log => {
         const dotClass = log.action?.includes('deposit') ? 'accent'
           : log.action?.includes('meal') ? 'warning'
-          : log.action?.includes('bazar') ? ''
-          : log.action?.includes('delete') ? 'danger'
-          : '';
+            : log.action?.includes('bazar') ? ''
+              : log.action?.includes('delete') ? 'danger'
+                : '';
 
         return `
           <div class="timeline-item">
@@ -282,10 +284,61 @@ const UserDashboard = {
     if (this.countdownInterval) clearInterval(this.countdownInterval);
     this.countdownInterval = setInterval(() => {
       // Re-render meal toggles every minute to update countdowns
-      if (Router.currentPage === 'dashboard') {
+      if (Router.currentPage === 'dashboard' || Router.currentPage === 'mymeal') {
         this.renderMealToggles();
       }
     }, 60000); // Every minute
+  },
+
+  /**
+   * Update visibility of 'My Meal' section and 'Dining Overview' based on manager settings
+   */
+  updateMyMealVisibility() {
+    const role = DineDesk.state.role;
+    const isAdmin = role === 'admin';
+    const showMyMeal = isAdmin && !!this.settings.managerMealEnabled;
+
+    const navMyMeal = document.getElementById('navMyMeal');
+    const bottomNavMyMeal = document.getElementById('bottomNavMyMeal');
+
+    if (navMyMeal) navMyMeal.style.display = showMyMeal ? 'flex' : 'none';
+    if (bottomNavMyMeal) bottomNavMyMeal.style.display = showMyMeal ? 'flex' : 'none';
+
+    // Header updates
+    const headerTitle = document.getElementById('headerTitle');
+    const headerSubtitle = document.getElementById('headerSubtitle');
+
+    if (isAdmin) {
+      // Admin dashboard always shows the Dining Overview, so make sure managerOverviewSection is shown
+      const managerOverview = document.getElementById('managerOverviewSection');
+      if (managerOverview) {
+        managerOverview.style.display = 'block';
+        managerOverview.classList.remove('hidden');
+      }
+
+      if (Router.currentPage === 'dashboard') {
+        if (headerTitle) headerTitle.textContent = 'Dining Overview';
+        if (headerSubtitle) {
+          headerSubtitle.textContent = 'Complete dining statistics and reports';
+          headerSubtitle.style.display = 'block';
+        }
+      } else if (Router.currentPage === 'mymeal') {
+        if (headerTitle) headerTitle.textContent = 'My Meal';
+        if (headerSubtitle) {
+          headerSubtitle.textContent = '';
+          headerSubtitle.style.display = 'none';
+        }
+      }
+    } else {
+      // Normal user
+      if (Router.currentPage === 'dashboard') {
+        if (headerTitle) headerTitle.textContent = 'Dashboard';
+        if (headerSubtitle) {
+          headerSubtitle.textContent = '';
+          headerSubtitle.style.display = 'none';
+        }
+      }
+    }
   },
 
   /**
@@ -294,6 +347,40 @@ const UserDashboard = {
   refresh() {
     this.renderStats();
     this.renderMealToggles();
+    this.updateMyMealVisibility();
+
+    const role = DineDesk.state.role;
+    const userContent = document.getElementById('userDashboardContent');
+    const mymealContainer = document.getElementById('mymealContainer');
+    const dashboardSection = document.getElementById('page-dashboard');
+
+    if (role === 'admin') {
+      // Admin: Move userDashboardContent to page-mymeal
+      if (userContent && mymealContainer && userContent.parentElement !== mymealContainer) {
+        mymealContainer.appendChild(userContent);
+      }
+      
+      // Admin dashboard always shows the Dining Overview
+      const overviewContent = document.getElementById('overviewContent');
+      const managerContainer = document.getElementById('managerOverviewSection');
+      if (overviewContent && managerContainer && overviewContent.parentElement !== managerContainer) {
+        managerContainer.appendChild(overviewContent);
+        managerContainer.classList.remove('hidden');
+        managerContainer.style.display = 'block';
+      }
+      DineDesk.overview.refresh();
+    } else {
+      // Regular user: Make sure userDashboardContent is in page-dashboard
+      if (userContent && dashboardSection && userContent.parentElement !== dashboardSection) {
+        dashboardSection.insertBefore(userContent, dashboardSection.firstChild);
+      }
+      // Hide manager overview section for regular users
+      const managerContainer = document.getElementById('managerOverviewSection');
+      if (managerContainer) {
+        managerContainer.style.display = 'none';
+        managerContainer.classList.add('hidden');
+      }
+    }
   }
 };
 

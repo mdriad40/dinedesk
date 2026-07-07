@@ -63,7 +63,13 @@ const MealsModule = {
     if (!grid) return;
 
     const users = DineDesk.users.users;
-    const userEntries = Object.entries(users);
+    const isManagerMealEnabled = !!(DineDesk.settings.getSettings().managerMealEnabled);
+    const userEntries = Object.entries(users).filter(([id, user]) => {
+      if (user.role === 'admin') {
+        return isManagerMealEnabled;
+      }
+      return true;
+    });
 
     if (userEntries.length === 0) {
       grid.innerHTML = `

@@ -35,6 +35,29 @@ const HistoryModule = {
     const avatar = document.getElementById('profileAvatar');
     if (avatar) avatar.textContent = Utils.initials(user.name);
 
+    const isMember = user.role !== 'admin';
+    const statsHistory = document.getElementById('profileStatsAndHistory');
+    const settingsSection = document.getElementById('profileSettingsSection');
+
+    if (statsHistory) {
+      statsHistory.style.display = isMember ? 'none' : 'block';
+    }
+
+    if (settingsSection) {
+      settingsSection.classList.toggle('hidden', !isMember);
+      settingsSection.style.display = isMember ? 'block' : 'none';
+      if (isMember) {
+        const nameInput = document.getElementById('profileNameInput');
+        const phoneInput = document.getElementById('profilePhoneInput');
+        if (nameInput && !nameInput.matches(':focus')) {
+          nameInput.value = user.name || '';
+        }
+        if (phoneInput && !phoneInput.matches(':focus')) {
+          phoneInput.value = user.phone || '';
+        }
+      }
+    }
+
     // Profile stats
     const mealRate = DineDesk.state.mealRate || 0;
     const mealCost = Utils.calcMealCost(mealRate, user.totalMeals);
@@ -62,6 +85,69 @@ const HistoryModule = {
           </div>
         </div>
       `;
+    }
+  },
+
+  async updateProfileInfo() {
+    const nameInput = document.getElementById('profileNameInput');
+    const phoneInput = document.getElementById('profilePhoneInput');
+    if (!nameInput || !phoneInput) return;
+
+    const name = nameInput.value.trim();
+    const phone = phoneInput.value.trim();
+
+    if (!name) {
+      Notifications.toast('warning', 'Validation Error', 'Full name is required.');
+      return;
+    }
+
+    try {
+      await db.ref(`dinings/${this.diningId}/users/${this.userId}`).update({
+        name,
+        phone
+      });
+      Notifications.toast('success', 'Success', 'Profile updated successfully.');
+    } catch (error) {
+      console.error('[HistoryModule] Update profile error:', error);
+      Notifications.toast('error', 'Error', 'Failed to update profile.');
+    }
+  },
+
+  async changePassword() {
+    const newPassInput = document.getElementById('profileNewPasswordInput');
+    const confirmPassInput = document.getElementById('profileConfirmPasswordInput');
+    if (!newPassInput || !confirmPassInput) return;
+
+    const newPassword = newPassInput.value;
+    const confirmPassword = confirmPassInput.value;
+
+    if (!newPassword || newPassword.length < 6) {
+      Notifications.toast('warning', 'Validation Error', 'Password must be at least 6 characters.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Notifications.toast('warning', 'Validation Error', 'Passwords do not match.');
+      return;
+    }
+
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        Notifications.toast('error', 'Error', 'No authenticated user found.');
+        return;
+      }
+      await user.updatePassword(newPassword);
+      Notifications.toast('success', 'Success', 'Password updated successfully.');
+      newPassInput.value = '';
+      confirmPassInput.value = '';
+    } catch (error) {
+      console.error('[HistoryModule] Change password error:', error);
+      if (error.code === 'auth/requires-recent-login') {
+        Notifications.toast('error', 'Authentication Error', 'Please sign out and sign back in to change password.');
+      } else {
+        Notifications.toast('error', 'Error', error.message || 'Failed to update password.');
+      }
     }
   },
 

@@ -4,7 +4,7 @@
 
 const Router = {
   currentPage: 'dashboard',
-  adminPages: ['users', 'meals', 'finance', 'settings'],
+  adminPages: ['users', 'meals', 'finance', 'settings', 'mymeal'],
 
   /**
    * Initialize the router
@@ -79,9 +79,19 @@ const Router = {
       finance: 'Finance',
       overview: 'Dining Overview',
       settings: 'Settings',
-      profile: 'Profile'
+      profile: 'Profile',
+      mymeal: 'My Meal',
+      mealchart: 'Meal Chart',
+      bazar: 'Bazar',
+      summary: 'Summary',
+      history: 'History'
     };
     Utils.setText('headerTitle', titles[page] || 'Dashboard');
+    const subtitle = document.getElementById('headerSubtitle');
+    if (subtitle) {
+      subtitle.textContent = '';
+      subtitle.style.display = 'none';
+    }
 
     // Update sidebar nav active state
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -122,6 +132,19 @@ const Router = {
         break;
       case 'profile':
         if (DineDesk.history) DineDesk.history.refresh();
+        break;
+      case 'mymeal':
+        if (DineDesk.userDashboard) DineDesk.userDashboard.refresh();
+        break;
+      case 'mealchart':
+        // MealChartModule init is called on app start; no refresh needed here
+        break;
+      case 'bazar':
+        if (DineDesk.bazarHistory) DineDesk.bazarHistory.refresh();
+        break;
+      case 'summary':
+      case 'history':
+        // Placeholders for future page-specific logic
         break;
     }
   }

@@ -40,6 +40,8 @@ window.DineDesk = {
   overview: OverviewModule,
   notifications: Notifications,
   charts: Charts,
+  mealChart: MealChartModule,
+  bazarHistory: BazarHistoryModule,
 
   /**
    * Initialize the app — called on dashboard.html load
@@ -145,10 +147,34 @@ window.DineDesk = {
     const quickActions = document.getElementById('adminQuickActions');
     if (quickActions) quickActions.classList.toggle('hidden', !isAdmin);
 
-    // Bottom nav labels for non-admin
-    if (!isAdmin) {
-      const mealsLabel = document.getElementById('bottomNavMealsLabel');
-      if (mealsLabel) mealsLabel.textContent = 'Overview';
+    // Hide Dining Overview nav item for Admin since it's on their Dashboard
+    const overviewNavBtn = document.querySelector('.sidebar-nav button[data-page="overview"]');
+    if (overviewNavBtn) {
+      overviewNavBtn.style.display = isAdmin ? 'none' : 'flex';
+    }
+    const bottomOverviewBtn = document.querySelector('.bottom-nav-item[data-page="overview"]');
+    if (bottomOverviewBtn) {
+      bottomOverviewBtn.style.display = isAdmin ? 'none' : 'flex';
+      const overviewSpan = bottomOverviewBtn.querySelector('span');
+      if (overviewSpan) {
+        overviewSpan.textContent = isAdmin ? 'Overview' : 'Dining';
+      }
+    }
+
+    // Hide Meals and Finance in bottom nav for non-admin to keep exactly 3 bottom nav items (Home, Dining, Profile)
+    const bottomMealsBtn = document.querySelector('.bottom-nav-item[data-page="meals"]');
+    if (bottomMealsBtn) {
+      bottomMealsBtn.style.display = isAdmin ? 'flex' : 'none';
+    }
+    const bottomFinanceBtn = document.querySelector('.bottom-nav-item[data-page="finance"]');
+    if (bottomFinanceBtn) {
+      bottomFinanceBtn.style.display = isAdmin ? 'flex' : 'none';
+    }
+
+    // Hide mobile menu button (hamburger menu on the left) for non-admin
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    if (mobileMenuBtn) {
+      mobileMenuBtn.classList.toggle('hidden', !isAdmin);
     }
   },
 
@@ -164,6 +190,8 @@ window.DineDesk = {
     HistoryModule.init(diningId, userId);
     OverviewModule.init(diningId);
     Notifications.initListener(diningId, userId);
+    if (window.MealChartModule) MealChartModule.init(diningId, userId);
+    if (window.BazarHistoryModule) BazarHistoryModule.init(diningId, userId);
 
     // Admin-only modules
     if (isAdmin) {
@@ -185,10 +213,16 @@ window.DineDesk = {
    */
   async _calcMealRate() {
     try {
-      const [bazarSnap, mealsSnap] = await Promise.all([
+      const [bazarSnap, mealsSnap, usersSnap, settingsSnap] = await Promise.all([
         db.ref(`dinings/${this.state.diningId}/bazar`).once('value'),
-        db.ref(`dinings/${this.state.diningId}/meals`).once('value')
+        db.ref(`dinings/${this.state.diningId}/meals`).once('value'),
+        db.ref(`dinings/${this.state.diningId}/users`).once('value'),
+        db.ref(`dinings/${this.state.diningId}/settings`).once('value')
       ]);
+
+      const users = usersSnap.val() || {};
+      const settings = settingsSnap.val() || {};
+      const isManagerMealEnabled = !!settings.managerMealEnabled;
 
       let totalBazar = 0;
       let totalMeals = 0;
@@ -201,7 +235,13 @@ window.DineDesk = {
         Object.values(monthData).forEach(dayData => {
           Object.values(dayData).forEach(typeData => {
             if (typeof typeData === 'object') {
-              Object.values(typeData).forEach(c => { totalMeals += parseInt(c) || 0; });
+              Object.entries(typeData).forEach(([uId, c]) => {
+                const user = users[uId];
+                if (user && user.role === 'admin' && !isManagerMealEnabled) {
+                  return; // Skip manager meals
+                }
+                totalMeals += parseInt(c) || 0;
+              });
             }
           });
         });
@@ -240,10 +280,16 @@ window.DineDesk = {
    */
   _recalcMealRate: Utils.debounce(async function() {
     try {
-      const [bazarSnap, mealsSnap] = await Promise.all([
+      const [bazarSnap, mealsSnap, usersSnap, settingsSnap] = await Promise.all([
         db.ref(`dinings/${DineDesk.state.diningId}/bazar`).once('value'),
-        db.ref(`dinings/${DineDesk.state.diningId}/meals`).once('value')
+        db.ref(`dinings/${DineDesk.state.diningId}/meals`).once('value'),
+        db.ref(`dinings/${DineDesk.state.diningId}/users`).once('value'),
+        db.ref(`dinings/${DineDesk.state.diningId}/settings`).once('value')
       ]);
+
+      const users = usersSnap.val() || {};
+      const settings = settingsSnap.val() || {};
+      const isManagerMealEnabled = !!settings.managerMealEnabled;
 
       let totalBazar = 0;
       let totalMeals = 0;
@@ -253,7 +299,13 @@ window.DineDesk = {
         Object.values(monthData).forEach(dayData => {
           Object.values(dayData).forEach(typeData => {
             if (typeof typeData === 'object') {
-              Object.values(typeData).forEach(c => { totalMeals += parseInt(c) || 0; });
+              Object.entries(typeData).forEach(([uId, c]) => {
+                const user = users[uId];
+                if (user && user.role === 'admin' && !isManagerMealEnabled) {
+                  return; // Skip manager meals
+                }
+                totalMeals += parseInt(c) || 0;
+              });
             }
           });
         });
