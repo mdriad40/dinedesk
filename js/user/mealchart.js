@@ -298,16 +298,16 @@ const MealChartModule = {
         const total = bCount + lCount + dCount;
 
         const bBadge = bCount > 0 
-          ? `<span class="badge badge-accent">${bCount} Meal${bCount > 1 ? 's' : ''}</span>`
-          : `<span class="badge badge-danger" style="opacity: 0.6;">OFF</span>`;
+          ? `<span class="meal-badge active">${bCount}</span>`
+          : `<span class="meal-badge inactive">—</span>`;
 
         const lBadge = lCount > 0 
-          ? `<span class="badge badge-accent">${lCount} Meal${lCount > 1 ? 's' : ''}</span>`
-          : `<span class="badge badge-danger" style="opacity: 0.6;">OFF</span>`;
+          ? `<span class="meal-badge active">${lCount}</span>`
+          : `<span class="meal-badge inactive">—</span>`;
 
         const dBadge = dCount > 0 
-          ? `<span class="badge badge-accent">${dCount} Meal${dCount > 1 ? 's' : ''}</span>`
-          : `<span class="badge badge-danger" style="opacity: 0.6;">OFF</span>`;
+          ? `<span class="meal-badge active">${dCount}</span>`
+          : `<span class="meal-badge inactive">—</span>`;
 
         return `
           <tr>
