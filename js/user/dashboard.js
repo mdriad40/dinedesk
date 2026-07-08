@@ -72,7 +72,6 @@ const UserDashboard = {
         <div class="stat-info">
           <div class="stat-label">Meal Cost</div>
           <div class="stat-value">${Utils.currency(mealCost)}</div>
-          <div class="stat-change">Rate: ${Utils.currency(mealRate)}/meal</div>
         </div>
       </div>
       <div class="stat-card fade-up stagger-4">
@@ -359,7 +358,7 @@ const UserDashboard = {
       if (userContent && mymealContainer && userContent.parentElement !== mymealContainer) {
         mymealContainer.appendChild(userContent);
       }
-      
+
       // Admin dashboard always shows the Dining Overview
       const overviewContent = document.getElementById('overviewContent');
       const managerContainer = document.getElementById('managerOverviewSection');

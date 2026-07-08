@@ -1054,9 +1054,55 @@
 
   .meal-chart-selectors .custom-dropdown-trigger {
     width: 100% !important;
+    min-width: 0 !important;
     font-size: 12px;
     height: 38px;
-    padding: 0 var(--space-3);
+    padding: 0 var(--space-2);
+  }
+
+  .meal-chart-selectors .custom-dropdown-trigger span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+  }
+
+  #mealChartYearDropdown .custom-dropdown-menu {
+    right: 0;
+    left: auto;
+  }
+
+  .table-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  .meal-chart-table th,
+  .meal-chart-table td {
+    width: auto !important;
+  }
+
+  .meal-chart-table th:nth-child(2),
+  .meal-chart-table th:nth-child(3),
+  .meal-chart-table th:nth-child(4),
+  .meal-chart-table td:nth-child(2),
+  .meal-chart-table td:nth-child(3),
+  .meal-chart-table td:nth-child(4) {
+    width: 75px !important;
+    max-width: 75px !important;
+  }
+
+  .meal-chart-table th:nth-child(5),
+  .meal-chart-table td:nth-child(5) {
+    width: 50px !important;
+    max-width: 50px !important;
+  }
+
+  .meal-chart-table td .badge {
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+    border-radius: 6px !important;
   }
 
   .meal-chart-table th {
