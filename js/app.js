@@ -13,6 +13,7 @@ window.DineDesk = {
     diningId: null,
     role: null,
     mealRate: 0,
+    monthlyMealRate: 0,
     totalMeals: 0,
     totalBazar: 0,
     totalDeposit: 0
@@ -42,6 +43,7 @@ window.DineDesk = {
   charts: Charts,
   mealChart: MealChartModule,
   bazarHistory: BazarHistoryModule,
+  summary: SummaryModule,
 
   /**
    * Initialize the app — called on dashboard.html load
@@ -192,6 +194,7 @@ window.DineDesk = {
     Notifications.initListener(diningId, userId);
     if (window.MealChartModule) MealChartModule.init(diningId, userId);
     if (window.BazarHistoryModule) BazarHistoryModule.init(diningId, userId);
+    if (window.SummaryModule) SummaryModule.init(diningId, userId);
 
     // Admin-only modules
     if (isAdmin) {
@@ -251,6 +254,27 @@ window.DineDesk = {
       this.state.totalMeals = totalMeals;
       this.state.totalBazar = totalBazar;
 
+      // Calculate current-month meal rate
+      const _currentMonth = Utils.currentMonth();
+      let _monthlyBazar = 0;
+      let _monthlyMeals = 0;
+      Object.values(bazars).forEach(b => {
+        if (b.date && b.date.startsWith(_currentMonth)) _monthlyBazar += Utils.num(b.amount);
+      });
+      const _monthData = meals[_currentMonth] || {};
+      Object.values(_monthData).forEach(dayData => {
+        Object.values(dayData).forEach(typeData => {
+          if (typeof typeData === 'object') {
+            Object.entries(typeData).forEach(([uId, c]) => {
+              const user = users[uId];
+              if (user && user.role === 'admin' && !isManagerMealEnabled) return;
+              _monthlyMeals += parseInt(c) || 0;
+            });
+          }
+        });
+      });
+      this.state.monthlyMealRate = _monthlyMeals > 0 ? _monthlyBazar / _monthlyMeals : 0;
+
       // Also calculate total deposits
       const depositsSnap = await db.ref(`dinings/${this.state.diningId}/deposits`).once('value');
       let totalDeposit = 0;
@@ -260,7 +284,7 @@ window.DineDesk = {
       });
       this.state.totalDeposit = totalDeposit;
 
-      console.log('[DineDesk] Meal Rate:', this.state.mealRate.toFixed(2));
+      console.log('[DineDesk] Meal Rate:', this.state.mealRate.toFixed(2), '| Monthly:', this.state.monthlyMealRate.toFixed(2));
 
       // Re-render user dashboard stats with correct rate
       UserDashboard.renderStats();
@@ -315,6 +339,27 @@ window.DineDesk = {
       DineDesk.state.totalMeals = totalMeals;
       DineDesk.state.totalBazar = totalBazar;
 
+      // Recalculate current-month meal rate
+      const _cm = Utils.currentMonth();
+      let _mBazar = 0;
+      let _mMeals = 0;
+      Object.values(bazarSnap.val() || {}).forEach(b => {
+        if (b.date && b.date.startsWith(_cm)) _mBazar += Utils.num(b.amount);
+      });
+      const _md = (mealsSnap.val() || {})[_cm] || {};
+      Object.values(_md).forEach(dayData => {
+        Object.values(dayData).forEach(typeData => {
+          if (typeof typeData === 'object') {
+            Object.entries(typeData).forEach(([uId, c]) => {
+              const user = users[uId];
+              if (user && user.role === 'admin' && !isManagerMealEnabled) return;
+              _mMeals += parseInt(c) || 0;
+            });
+          }
+        });
+      });
+      DineDesk.state.monthlyMealRate = _mMeals > 0 ? _mBazar / _mMeals : 0;
+
       // Refresh current page
       if (Router.currentPage === 'dashboard') UserDashboard.renderStats();
       if (Router.currentPage === 'profile') HistoryModule.refresh();
@@ -362,5 +407,35 @@ document.addEventListener('DOMContentLoaded', () => {
     DineDesk.init();
   }
 });
+
+// Global Custom Dropdowns Manager (Scrolling to selected option, closing on click-outside, exclusive toggles)
+document.addEventListener('click', (e) => {
+  const trigger = e.target.closest('.custom-dropdown-trigger');
+  const customDropdown = e.target.closest('.custom-dropdown');
+  
+  if (trigger) {
+    const dropdown = trigger.parentElement;
+    // Close all other dropdowns
+    document.querySelectorAll('.custom-dropdown.active').forEach(dd => {
+      if (dd !== dropdown) {
+        dd.classList.remove('active');
+      }
+    });
+    // Scroll selected item into view after dropdown opens
+    setTimeout(() => {
+      if (dropdown.classList.contains('active')) {
+        const selected = dropdown.querySelector('.custom-dropdown-item.selected');
+        if (selected) {
+          selected.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+        }
+      }
+    }, 50);
+  } else if (!customDropdown) {
+    // Clicked outside any custom dropdown - close all active ones
+    document.querySelectorAll('.custom-dropdown.active').forEach(dd => {
+      dd.classList.remove('active');
+    });
+  }
+}, true);
 
 console.log('[DineDesk] App module loaded');

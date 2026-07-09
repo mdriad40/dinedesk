@@ -282,7 +282,7 @@ const MealChartModule = {
       });
 
       if (userEntries.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center p-6" style="color:var(--text-tertiary);">No members in dining.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center p-6" style="color:var(--text-tertiary);">No members in dining.</td></tr>`;
         return;
       }
 
@@ -295,7 +295,6 @@ const MealChartModule = {
         const bCount = breakfast[id] || 0;
         const lCount = lunch[id] || 0;
         const dCount = dinner[id] || 0;
-        const total = bCount + lCount + dCount;
 
         const bBadge = bCount > 0 
           ? `<span class="meal-badge active">${bCount}</span>`
@@ -312,22 +311,18 @@ const MealChartModule = {
         return `
           <tr>
             <td>
-              <div class="flex items-center gap-3">
-                <div class="avatar avatar-sm" style="background:${DineDesk.users._avatarColor(u.name)};">${Utils.initials(u.name)}</div>
-                <span style="font-weight:var(--weight-semibold); color:var(--text-primary);">${u.name}</span>
-              </div>
+              <span style="font-weight:var(--weight-semibold); color:var(--text-primary);">${u.name}</span>
             </td>
             <td class="text-center">${bBadge}</td>
             <td class="text-center">${lBadge}</td>
             <td class="text-center">${dBadge}</td>
-            <td class="text-center" style="font-weight:var(--weight-bold);">${total}</td>
           </tr>
         `;
       }).join('');
 
     } catch (e) {
       console.error('[MealChartModule] Detail render error:', e);
-      tbody.innerHTML = `<tr><td colspan="5" class="text-center p-6" style="color:var(--text-tertiary);">Failed to load meal logs.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center p-6" style="color:var(--text-tertiary);">Failed to load meal logs.</td></tr>`;
     }
   },
 

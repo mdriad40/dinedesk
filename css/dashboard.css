@@ -31,22 +31,22 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  border-bottom: 1px solid rgba(255,255,255,0.10);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
 }
 
 .sidebar-brand-icon {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-lg);
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.25);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   flex-shrink: 0;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 
 .sidebar-brand-icon svg {
@@ -64,7 +64,7 @@
 
 .sidebar-brand-text span {
   font-size: var(--font-xs);
-  color: rgba(255,255,255,0.55);
+  color: rgba(255, 255, 255, 0.55);
   font-weight: var(--weight-medium);
 }
 
@@ -78,7 +78,7 @@
 .sidebar-section-label {
   font-size: var(--font-xs);
   font-weight: var(--weight-semibold);
-  color: rgba(255,255,255,0.40);
+  color: rgba(255, 255, 255, 0.40);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: var(--space-2) var(--space-3);
@@ -95,7 +95,7 @@
   gap: var(--space-3);
   padding: 0.625rem var(--space-3);
   border-radius: var(--radius-lg);
-  color: rgba(255,255,255,0.65);
+  color: rgba(255, 255, 255, 0.65);
   font-size: var(--font-base);
   font-weight: var(--weight-medium);
   cursor: pointer;
@@ -109,16 +109,16 @@
 }
 
 .nav-item:hover {
-  background: rgba(255,255,255,0.10);
-  color: rgba(255,255,255,0.95);
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .nav-item.active {
-  background: rgba(255,255,255,0.18);
+  background: rgba(255, 255, 255, 0.18);
   color: #FFFFFF;
   font-weight: var(--weight-semibold);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.10);
-  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .nav-item svg {
@@ -140,7 +140,7 @@
 /* ---- Sidebar Footer ---- */
 .sidebar-footer {
   padding: var(--space-4) var(--space-3);
-  border-top: 1px solid rgba(255,255,255,0.10);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
 }
 
 .sidebar-user {
@@ -154,7 +154,7 @@
 }
 
 .sidebar-user:hover {
-  background: rgba(255,255,255,0.10);
+  background: rgba(255, 255, 255, 0.10);
 }
 
 .sidebar-user-info {
@@ -165,12 +165,12 @@
 .sidebar-user-name {
   font-size: var(--font-sm);
   font-weight: var(--weight-semibold);
-  color: rgba(255,255,255,0.92);
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .sidebar-user-role {
   font-size: var(--font-xs);
-  color: rgba(255,255,255,0.45);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 /* ======== MAIN CONTENT ======== */
@@ -225,6 +225,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 .header-icon-btn {
@@ -757,12 +758,10 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(
-    45deg,
-    transparent 45%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 55%
-  );
+  background: linear-gradient(45deg,
+      transparent 45%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 55%);
   transform: rotate(30deg);
   transition: transform 0.6s ease;
 }
@@ -848,14 +847,16 @@
 }
 
 .meal-chart-title h2 {
-  font-size: 24px; /* Increased to standard header size */
+  font-size: 24px;
+  /* Increased to standard header size */
   font-weight: var(--weight-bold);
   color: var(--text-primary);
   margin: 0;
 }
 
 .meal-chart-title p {
-  font-size: 13px; /* Increased subtitle size */
+  font-size: 13px;
+  /* Increased subtitle size */
   color: var(--text-tertiary);
   margin-top: 4px;
   margin-bottom: 0;
@@ -1008,7 +1009,8 @@
 
 /* Meal Chart Table Details */
 .meal-chart-table th {
-  font-size: 12px !important; /* Increased header size */
+  font-size: 12px !important;
+  /* Increased header size */
   font-weight: var(--weight-bold);
   letter-spacing: 0.05em;
   padding: 12px !important;
@@ -1016,19 +1018,22 @@
 }
 
 .meal-chart-table td {
-  font-size: 14px !important; /* Increased cell text size */
+  font-size: 14px !important;
+  /* Increased cell text size */
   padding: 10px 12px !important;
 }
 
 .meal-chart-table td .avatar {
-  width: 32px !important; /* Increased avatar size */
+  width: 32px !important;
+  /* Increased avatar size */
   height: 32px !important;
   font-size: 11px !important;
   font-weight: var(--weight-bold);
 }
 
 .meal-chart-table td .badge {
-  font-size: 11px !important; /* Increased badge size */
+  font-size: 11px !important;
+  /* Increased badge size */
   padding: 4px 10px !important;
   border-radius: 8px !important;
 }
@@ -1062,8 +1067,48 @@
 .mobile-text {
   display: none;
 }
+
 .desktop-text {
   display: inline;
+}
+
+/* Thinner regular font styling for Breakfast, Lunch, Dinner column headers */
+.meal-chart-table th:nth-child(2),
+.meal-chart-table th:nth-child(3),
+.meal-chart-table th:nth-child(4) {
+  font-weight: 400 !important;
+  /* normal thin font */
+  text-transform: capitalize !important;
+  /* capitalized instead of uppercase to take less space and look cleaner */
+}
+
+/* Add padding to the left of the Member column (first child) */
+.meal-chart-table th:first-child,
+.meal-chart-table td:first-child {
+  padding-left: 10px !important;
+}
+
+/* Back button styling */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  background-color: rgba(16, 185, 129, 0.06);
+  color: var(--primary-700);
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+}
+
+.btn-back:hover {
+  background-color: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  transform: translateX(-2px);
 }
 
 /* Mobile specific styling for Meal Chart */
@@ -1073,7 +1118,7 @@
     align-items: stretch;
     gap: var(--space-4);
   }
-  
+
   .meal-chart-selectors {
     display: grid;
     grid-template-columns: 1fr 1.6fr 1.2fr;
@@ -1122,26 +1167,9 @@
   .meal-chart-table td:nth-child(2),
   .meal-chart-table td:nth-child(3),
   .meal-chart-table td:nth-child(4) {
-    width: 48px !important;
-    max-width: 48px !important;
-    padding: 6px 2px !important;
-  }
-
-  .meal-chart-table th:nth-child(5),
-  .meal-chart-table td:nth-child(5) {
-    width: 42px !important;
-    max-width: 42px !important;
-    padding: 6px 2px !important;
-  }
-
-  .meal-chart-table td:first-child .flex {
-    gap: var(--space-1) !important;
-  }
-
-  .meal-chart-table td:first-child .avatar {
-    width: 24px !important;
-    height: 24px !important;
-    font-size: 9px !important;
+    width: 70px !important;
+    max-width: 70px !important;
+    padding: 6px 4px !important;
   }
 
   .meal-chart-table td:first-child span {
@@ -1149,17 +1177,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
     display: inline-block;
-    max-width: 50px !important;
+    max-width: 80px !important;
   }
 
   .meal-chart-table th {
     font-size: 11px !important;
-    padding: 10px 8px !important;
+    padding: 10px 4px !important;
   }
 
   .meal-chart-table td {
     font-size: 13px !important;
-    padding: 8px 8px !important;
+    padding: 8px 4px !important;
   }
 
   .card {
@@ -1172,5 +1200,318 @@
 
   .desktop-text {
     display: none !important;
+  }
+}
+
+/* ============================================================
+   SUMMARY PAGE — Professional Emerald Theme
+   ============================================================ */
+
+/* ---- Top bar: title + selectors ---- */
+.summary-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.summary-topbar-title h2 {
+  font-size: var(--font-xl);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.summary-topbar-title p {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  margin: 3px 0 0 0;
+}
+
+.summary-topbar-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* Make summary dropdowns compact */
+.summary-dropdown .custom-dropdown-trigger {
+  padding: 7px 12px;
+  font-size: var(--font-sm);
+  min-width: 90px;
+}
+
+/* ---- Meal Rate Strip (compact horizontal pill) ---- */
+.summary-rate-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(120deg, var(--primary-800) 0%, var(--primary-700) 100%);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3) var(--space-5);
+  margin-bottom: var(--space-5);
+  box-shadow: 0 4px 16px rgba(4, 120, 87, 0.22);
+}
+
+.summary-rate-strip-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.summary-rate-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #A7F3D0;
+  flex-shrink: 0;
+}
+
+.summary-rate-label {
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  color: rgba(255, 255, 255, 0.60);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.summary-rate-month {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  color: rgba(255, 255, 255, 0.90);
+  margin-top: 3px;
+}
+
+.summary-rate-amount {
+  font-family: var(--font-number);
+  font-size: 22px;
+  font-weight: var(--weight-extrabold);
+  color: #ECFDF5;
+  letter-spacing: -0.5px;
+}
+
+/* ---- Summary Grid ---- */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: var(--space-4);
+}
+
+/* ============================================================
+   Summary Card (.sc) — New Professional Design
+   ============================================================ */
+.sc {
+  background: var(--bg-primary);
+  border: 1px solid rgba(5, 150, 105, 0.14);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(5, 150, 105, 0.06), 0 1px 4px rgba(0,0,0,0.04);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.sc:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(5, 150, 105, 0.12), 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* Card header: green gradient with name + badge */
+.sc-header {
+  background: linear-gradient(135deg, var(--primary-900) 0%, var(--primary-700) 100%);
+  padding: var(--space-3) var(--space-4);
+}
+
+.sc-name-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sc-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  color: white;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.20);
+  letter-spacing: 0.02em;
+}
+
+.sc-name-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sc-name {
+  font-size: var(--font-base);
+  font-weight: var(--weight-bold);
+  color: #FFFFFF;
+  letter-spacing: 0.02em;
+}
+
+/* Status badge */
+.sc-badge {
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sc-badge-ok {
+  background: rgba(167, 243, 208, 0.20);
+  color: #A7F3D0;
+  border: 1px solid rgba(167, 243, 208, 0.25);
+}
+
+.sc-badge-due {
+  background: rgba(252, 165, 165, 0.20);
+  color: #FCA5A5;
+  border: 1px solid rgba(252, 165, 165, 0.25);
+}
+
+/* Card body */
+.sc-body {
+  padding: 0;
+}
+
+/* Stat rows */
+.sc-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid rgba(5, 150, 105, 0.08);
+}
+
+.sc-row:last-child {
+  border-bottom: none;
+}
+
+.sc-row-alt {
+  background: rgba(5, 150, 105, 0.025);
+}
+
+.sc-cell {
+  padding: 10px 8px;
+  text-align: center;
+  border-right: 1px solid rgba(5, 150, 105, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.sc-cell:last-child {
+  border-right: none;
+}
+
+.sc-cell-label {
+  font-size: 11.5px;
+  font-weight: var(--weight-semibold);
+  color: var(--text-tertiary);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.sc-cell-value {
+  font-family: var(--font-number);
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* Deposit: teal accent */
+.sc-deposit {
+  color: var(--primary-700) !important;
+}
+
+/* Balance: positive = green, negative = red */
+.sc-positive {
+  color: var(--accent-700) !important;
+}
+
+.sc-negative {
+  color: var(--danger-600) !important;
+}
+
+/* ============================================================
+   Mobile Responsive — Summary Page
+   ============================================================ */
+@media (max-width: 640px) {
+  .summary-topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .summary-topbar-controls {
+    justify-content: flex-end;
+  }
+
+  .summary-dropdown .custom-dropdown-trigger {
+    min-width: 80px;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .summary-rate-strip {
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+
+  .summary-rate-amount {
+    font-size: 20px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+}
+
+@media (max-width: 380px) {
+  .sc-cell-label {
+    font-size: 10.5px;
+  }
+
+  .sc-cell-value {
+    font-size: 13px;
+  }
+
+  .sc-cell {
+    padding: 8px 4px;
+  }
+
+  .sc-name {
+    font-size: var(--font-sm);
+  }
+
+  .summary-rate-strip {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .summary-rate-amount {
+    font-size: 18px;
   }
 }

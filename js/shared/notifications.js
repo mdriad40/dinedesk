@@ -160,18 +160,27 @@ const Notifications = {
     this.toast('info', 'Notifications', 'All notifications marked as read');
   },
 
-  /**
-   * Create a log entry
-   */
-  async log(diningId, action, details, performedBy) {
+  async log(diningId, action, details, performedBy, targetUserId = null) {
     if (!diningId) return;
-    const logRef = db.ref(`dinings/${diningId}/logs`).push();
-    await logRef.set({
+    const logData = {
       action,
       details,
       performedBy: performedBy || 'system',
       timestamp: firebase.database.ServerValue.TIMESTAMP
-    });
+    };
+    if (targetUserId) {
+      logData.targetUserId = targetUserId;
+    }
+
+    // Write to global logs
+    const logRef = db.ref(`dinings/${diningId}/logs`).push();
+    await logRef.set(logData);
+
+    // If targetUserId is specified, also write to the user-specific logs
+    if (targetUserId) {
+      const userLogRef = db.ref(`dinings/${diningId}/users/${targetUserId}/logs`).push();
+      await userLogRef.set(logData);
+    }
   }
 };
 

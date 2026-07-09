@@ -190,7 +190,7 @@ const UsersModule = {
         });
 
         Notifications.toast('success', 'Updated', `${name} has been updated.`);
-        await Notifications.log(this.diningId, 'user_updated', `Updated user: ${name}`, DineDesk.state.userId);
+        await Notifications.log(this.diningId, 'user_updated', `Updated user: ${name}`, DineDesk.state.userId, this.editingUserId);
       } else {
         // Create new user with Firebase Auth
         if (!password || password.length < 6) {
@@ -244,7 +244,7 @@ const UsersModule = {
 
           // Notify
           await Notifications.create(this.diningId, 'New Member Added', `${name} has joined the dining.`, 'all', 'info');
-          await Notifications.log(this.diningId, 'user_added', `Added new user: ${name}`, DineDesk.state.userId);
+          await Notifications.log(this.diningId, 'user_added', `Added new user: ${name}`, DineDesk.state.userId, userId);
           Notifications.toast('success', 'Member Added', `${name} has been added successfully.`);
 
         } finally {

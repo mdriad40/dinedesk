@@ -105,12 +105,33 @@ const MealsModule = {
           <div class="avatar avatar-sm" style="background:${DineDesk.users._avatarColor(user.name)};">${Utils.initials(user.name)}</div>
           <span class="meal-user-chip-name">${user.name}</span>
           <input type="number" class="meal-count-input" value="${hasMeal ? mealCount : 1}" min="0" max="10"
-                 onclick="event.stopPropagation()" data-user-count="${id}">
+                 onclick="event.stopPropagation()" oninput="DineDesk.meals.handleCountInput('${id}', this)" data-user-count="${id}">
         </div>
       `;
     }).join('');
 
     this._updateSelectedCount();
+  },
+
+  /**
+   * Automatically toggle selection status based on user input
+   */
+  handleCountInput(userId, inputEl) {
+    const val = parseInt(inputEl.value) || 0;
+    const chip = inputEl.closest('.meal-user-chip');
+    if (val > 0) {
+      if (!this.selectedUsers.has(userId)) {
+        this.selectedUsers.add(userId);
+        if (chip) chip.classList.add('selected');
+        this._updateSelectedCount();
+      }
+    } else {
+      if (this.selectedUsers.has(userId)) {
+        this.selectedUsers.delete(userId);
+        if (chip) chip.classList.remove('selected');
+        this._updateSelectedCount();
+      }
+    }
   },
 
   /**
@@ -176,6 +197,9 @@ const MealsModule = {
       const updates = {};
       const users = DineDesk.users.users;
 
+      // Get existing meals BEFORE updating the database (prevents race condition with DB listener)
+      const dayMeals = { ...(this.mealsData[day]?.[this.selectedType] || {}) };
+
       // Build meal updates
       Object.keys(users).forEach(userId => {
         if (this.selectedUsers.has(userId)) {
@@ -203,6 +227,36 @@ const MealsModule = {
         'meal'
       );
       await Notifications.log(this.diningId, 'meals_updated', `${this.selectedType} meals updated for ${this.currentDate}`, DineDesk.state.userId);
+
+      // Log individual meal updates for users whose meal counts changed
+      for (const userId of Object.keys(users)) {
+        const oldCount = dayMeals[userId] !== undefined ? dayMeals[userId] : 0;
+        let newCount = 0;
+        if (this.selectedUsers.has(userId)) {
+          const countInput = document.querySelector(`[data-user-count="${userId}"]`);
+          newCount = countInput ? parseInt(countInput.value) || bulkCount : bulkCount;
+        }
+
+        if (oldCount !== newCount) {
+          const user = users[userId];
+          if (user) {
+            const mealLabel = this.selectedType.charAt(0).toUpperCase() + this.selectedType.slice(1);
+            let detail;
+            if (newCount === 0) {
+              detail = `${mealLabel} removed`;
+            } else {
+              detail = `${newCount} ${mealLabel} added`;
+            }
+            await Notifications.log(
+              this.diningId,
+              'meal_updated',
+              detail,
+              DineDesk.state.userId,
+              userId
+            );
+          }
+        }
+      }
 
       this.selectedUsers.clear();
       this.renderUserGrid();

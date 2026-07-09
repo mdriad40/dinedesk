@@ -109,7 +109,7 @@ const FinanceModule = {
 
       // Notify
       await Notifications.create(this.diningId, 'Deposit Received', `${Utils.currency(amount)} deposited for ${user?.name || 'User'}.`, userId, 'deposit');
-      await Notifications.log(this.diningId, 'deposit_added', `Deposit ৳${amount} for ${user?.name}`, DineDesk.state.userId);
+      await Notifications.log(this.diningId, 'deposit_added', `Deposit ৳${amount} for ${user?.name}`, DineDesk.state.userId, userId);
       Notifications.toast('success', 'Deposit Added', `${Utils.currency(amount)} added for ${user?.name}.`);
       closeModal('depositModal');
 
@@ -151,7 +151,7 @@ const FinanceModule = {
       await db.ref(`dinings/${this.diningId}/users/${userId}/totalDeposit`).set(currentDeposit - amount);
 
       await Notifications.create(this.diningId, 'Balance Deducted', `${Utils.currency(amount)} deducted from ${user?.name}. Reason: ${reason}`, userId, 'deposit');
-      await Notifications.log(this.diningId, 'deduction_added', `Deducted ৳${amount} from ${user?.name}: ${reason}`, DineDesk.state.userId);
+      await Notifications.log(this.diningId, 'deduction_added', `Deducted ৳${amount} from ${user?.name}: ${reason}`, DineDesk.state.userId, userId);
       Notifications.toast('success', 'Deduction Applied', `${Utils.currency(amount)} deducted from ${user?.name}.`);
       closeModal('deductModal');
 

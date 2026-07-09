@@ -93,14 +93,36 @@ const Router = {
       subtitle.style.display = 'none';
     }
 
+    // Toggle header back button and mobile menu button visibility
+    const backBtn = document.getElementById('headerBackBtn');
+    if (backBtn) {
+      const showBack = (page === 'mealchart' || page === 'bazar' || page === 'summary');
+      backBtn.style.display = showBack ? 'inline-flex' : 'none';
+      
+      const menuBtn = document.querySelector('.mobile-menu-btn');
+      if (menuBtn) {
+        if (showBack) {
+          menuBtn.style.setProperty('display', 'none', 'important');
+        } else {
+          menuBtn.style.removeProperty('display');
+        }
+      }
+    }
+
+    // Determine which nav page should be highlighted
+    let activeNavPage = page;
+    if (page === 'mealchart' || page === 'bazar' || page === 'summary') {
+      activeNavPage = 'overview';
+    }
+
     // Update sidebar nav active state
     document.querySelectorAll('.nav-item').forEach(item => {
-      item.classList.toggle('active', item.dataset.page === page);
+      item.classList.toggle('active', item.dataset.page === activeNavPage);
     });
 
     // Update bottom nav active state
     document.querySelectorAll('.bottom-nav-item').forEach(item => {
-      item.classList.toggle('active', item.dataset.page === page);
+      item.classList.toggle('active', item.dataset.page === activeNavPage);
     });
 
     // Trigger page-specific init
@@ -143,6 +165,8 @@ const Router = {
         if (DineDesk.bazarHistory) DineDesk.bazarHistory.refresh();
         break;
       case 'summary':
+        if (DineDesk.summary) DineDesk.summary.refresh();
+        break;
       case 'history':
         // Placeholders for future page-specific logic
         break;

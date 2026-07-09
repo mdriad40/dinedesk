@@ -107,6 +107,7 @@ const HistoryModule = {
         phone
       });
       Notifications.toast('success', 'Success', 'Profile updated successfully.');
+      await Notifications.log(this.diningId, 'user_updated', `Profile updated by user`, this.userId, this.userId);
     } catch (error) {
       console.error('[HistoryModule] Update profile error:', error);
       Notifications.toast('error', 'Error', 'Failed to update profile.');
@@ -139,6 +140,7 @@ const HistoryModule = {
       }
       await user.updatePassword(newPassword);
       Notifications.toast('success', 'Success', 'Password updated successfully.');
+      await Notifications.log(this.diningId, 'security_updated', `Password changed by user`, this.userId, this.userId);
       newPassInput.value = '';
       confirmPassInput.value = '';
     } catch (error) {

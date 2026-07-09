@@ -1969,3 +1969,57 @@ textarea.form-input {
     padding: var(--space-3) var(--space-4);
   }
 }
+
+/* ======== MEAL TOGGLE HISTORY ======== */
+.meal-toggle-history-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--gray-100);
+  transition: background var(--transition-fast);
+}
+
+.meal-toggle-history-item:last-child {
+  border-bottom: none;
+}
+
+.meal-toggle-history-item:hover {
+  background: var(--gray-50);
+}
+
+.mth-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mth-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mth-meal-type {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.mth-datetime {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.mth-pill {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+}

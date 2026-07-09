@@ -49,11 +49,8 @@ const Utils = {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   },
 
-  /**
-   * Format timestamp to relative time
-   */
   timeAgo(timestamp) {
-    if (!timestamp) return '';
+    if (!timestamp || typeof timestamp !== 'number') return 'Just now';
     const now = Date.now();
     const diff = now - timestamp;
     const seconds = Math.floor(diff / 1000);
@@ -61,11 +58,16 @@ const Utils = {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
+    if (seconds < 0) return 'Just now';
     if (seconds < 60) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
     if (days < 7) return `${days}d ago`;
-    return Utils.formatDate(new Date(timestamp).toISOString().split('T')[0]);
+    try {
+      return Utils.formatDate(new Date(timestamp).toISOString().split('T')[0]);
+    } catch (e) {
+      return 'Just now';
+    }
   },
 
   /**
