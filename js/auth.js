@@ -34,27 +34,8 @@ const Auth = {
       }
       const loader = document.getElementById('pageLoader');
       if (user) {
-        // User is signed in — verify they have a dining mapping before redirecting
-        try {
-          const emailKey = Utils.encodeEmail(user.email);
-          const snap = await db.ref(`userMappings/emailToDining/${emailKey}`).once('value');
-          if (snap.val()) {
-            // Valid dining mapping — redirect to dashboard
-            window.location.href = 'dashboard.html';
-          } else {
-            // No dining mapping — sign out this orphaned account and show login
-            console.warn('[DineDesk] User has no dining mapping. Signing out.');
-            await auth.signOut();
-            if (loader) loader.style.display = 'none';
-            const authPage = document.getElementById('authPage');
-            if (authPage) authPage.style.display = 'flex';
-          }
-        } catch (error) {
-          console.error('[DineDesk] Auth check error:', error);
-          if (loader) loader.style.display = 'none';
-          const authPage = document.getElementById('authPage');
-          if (authPage) authPage.style.display = 'flex';
-        }
+        // Redirect to dashboard (dashboard.html will decide if they need onboarding)
+        window.location.href = 'dashboard.html';
       } else {
         // Not signed in — show auth page
         if (loader) loader.style.display = 'none';
@@ -130,17 +111,17 @@ const Auth = {
    */
   async register() {
     const managerName = document.getElementById('regManagerName').value.trim();
-    const diningName = document.getElementById('regDiningName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const phone = document.getElementById('regPhone').value.trim();
     const password = document.getElementById('regPassword').value;
-    const confirmPassword = document.getElementById('regConfirmPassword').value;
+    const confirmEl = document.getElementById('regConfirmPassword');
+    const confirmPassword = confirmEl ? confirmEl.value : password;
     const btn = document.getElementById('registerBtn');
     const errorDiv = document.getElementById('registerError');
     const errorText = document.getElementById('registerErrorText');
 
     // Validation
-    if (!managerName || !diningName || !email || !password) {
+    if (!managerName || !email || !password) {
       this._showError(errorDiv, errorText, 'Please fill in all required fields.');
       return;
     }
@@ -166,69 +147,23 @@ const Auth = {
       const userCredential = await auth.createUserWithEmailAndPassword(email, password);
       const uid = userCredential.user.uid;
 
-      // 2. Generate dining ID
-      const diningId = Utils.generateId();
-      const adminUserId = Utils.generateId();
+      // 2. Generate username
       const username = managerName.toLowerCase().replace(/\s+/g, '') + Math.floor(Math.random() * 100);
 
-      // 3. Create dining structure in Realtime Database
-      const diningData = {
-        info: {
-          name: diningName,
-          managerName: managerName,
-          email: email,
-          phone: phone || '',
-          adminUid: uid,
-          createdAt: firebase.database.ServerValue.TIMESTAMP
-        },
-        users: {
-          [adminUserId]: {
-            name: managerName,
-            username: username,
-            email: email,
-            phone: phone || '',
-            role: 'admin',
-            authUid: uid,
-            totalDeposit: 0,
-            totalMeals: 0,
-            mealCost: 0,
-            balance: 0,
-            createdAt: firebase.database.ServerValue.TIMESTAMP,
-            mealStatus: {
-              breakfast: true,
-              lunch: true,
-              dinner: true
-            }
-          }
-        },
-        settings: {
-          autoMealEnabled: false,
-          breakfastDeadline: '04:00',
-          lunchDeadline: '10:00',
-          dinnerDeadline: '16:00',
-          defaultMealState: true
-        }
+      // 3. Create personal user record in DB
+      const userData = {
+        name: managerName,
+        username: username,
+        email: email,
+        phone: phone || '',
+        createdAt: firebase.database.ServerValue.TIMESTAMP
       };
 
-      // 4. Write dining data
-      await db.ref(`dinings/${diningId}`).set(diningData);
-
-      // 5. Create user mappings for lookup
-      await db.ref(`userMappings/emailToDining/${Utils.encodeEmail(email)}`).set({
-        diningId: diningId,
-        userId: adminUserId
-      });
-
-      await db.ref(`userMappings/usernameToDining/${username}`).set({
-        diningId: diningId,
-        userId: adminUserId
-      });
-
-      // 6. Create initial notification
-      await Notifications.create(diningId, 'Welcome to DineDesk! 🎉', `${diningName} has been created successfully.`, 'all', 'info');
+      // 4. Write personal user data
+      await db.ref(`users/${uid}`).set(userData);
 
       // Auth state change will redirect to dashboard
-      console.log('[DineDesk] Dining created successfully:', diningId);
+      console.log('[DineDesk] User profile created successfully:', uid);
 
       Auth.isRegistering = false;
       window.location.href = 'dashboard.html';

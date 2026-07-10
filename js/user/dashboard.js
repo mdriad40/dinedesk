@@ -64,14 +64,20 @@ const UserDashboard = {
       .on('value', (snap) => {
         const monthData = snap.val() || {};
         let total = 0;
+        let breakdown = { breakfast: 0, lunch: 0, dinner: 0 };
         Object.values(monthData).forEach(dayData => {
-          Object.values(dayData).forEach(typeData => {
+          Object.entries(dayData).forEach(([type, typeData]) => {
             if (typeof typeData === 'object' && typeData[userId] !== undefined) {
-              total += parseFloat(typeData[userId]) || 0;
+              const count = parseFloat(typeData[userId]) || 0;
+              total += count;
+              if (breakdown[type] !== undefined) {
+                breakdown[type] += count;
+              }
             }
           });
         });
         this.monthlyMeals = total;
+        this.monthlyMealsBreakdown = breakdown;
         this.renderStats();
       });
   },
@@ -86,7 +92,9 @@ const UserDashboard = {
     const u = this.userData;
     // Use current-month values only
     const mealRate = DineDesk.state.monthlyMealRate || 0;
-    const mealCost = Utils.calcMealCost(mealRate, this.monthlyMeals);
+    const rateMode = this.settings.rateMode || 'market';
+    const fixedRates = rateMode === 'fixed' ? (this.settings.fixedRates || null) : null;
+    const mealCost = Utils.calcMealCost(mealRate, this.monthlyMeals, this.monthlyMealsBreakdown, fixedRates);
     const balance = Utils.calcBalance(this.monthlyDeposit, mealCost);
     const due = balance < 0 ? Math.abs(balance) : 0;
 
@@ -135,12 +143,11 @@ const UserDashboard = {
    */
   renderMealToggles() {
     const grid = document.getElementById('mealTogglesGrid');
-    if (!grid || !this.userData) return;
-
-    const u = this.userData;
+    if (!grid || !this.userData) return;    const u = this.userData;
     const mealStatus = u.mealStatus || { breakfast: true, lunch: true, dinner: true };
     const s = this.settings;
     const autoEnabled = !!s.autoMealEnabled;
+    const trackedMeals = s.trackedMeals || { breakfast: true, lunch: true, dinner: true };
 
     const meals = [
       {
@@ -167,7 +174,7 @@ const UserDashboard = {
         deadline: s.dinnerDeadline || '16:00',
         status: mealStatus.dinner !== false
       }
-    ];
+    ].filter(m => trackedMeals[m.type] !== false);
 
     // Update date display
     Utils.setText('mealDateDisplay', Utils.formatDate(Utils.today()));

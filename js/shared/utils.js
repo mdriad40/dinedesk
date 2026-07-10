@@ -216,7 +216,13 @@ const Utils = {
   /**
    * Calculate user's meal cost
    */
-  calcMealCost(mealRate, userMeals) {
+  calcMealCost(mealRate, userMeals, mealBreakdown = null, fixedRates = null) {
+    if (fixedRates) {
+      const b = (mealBreakdown?.breakfast || 0) * (fixedRates.breakfast || 0);
+      const l = (mealBreakdown?.lunch || 0) * (fixedRates.lunch || 0);
+      const d = (mealBreakdown?.dinner || 0) * (fixedRates.dinner || 0);
+      return b + l + d;
+    }
     return mealRate * (userMeals || 0);
   },
 

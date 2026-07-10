@@ -39,6 +39,43 @@ const SettingsModule = {
     if (bf) bf.value = s.breakfastDeadline || '04:00';
     if (lf) lf.value = s.lunchDeadline || '10:00';
     if (df) df.value = s.dinnerDeadline || '16:00';
+
+    // Tracked Meals checkboxes
+    const tracked = s.trackedMeals || { breakfast: true, lunch: true, dinner: true };
+    const tb = document.getElementById('settingsTrackedBreakfast');
+    const tl = document.getElementById('settingsTrackedLunch');
+    const td = document.getElementById('settingsTrackedDinner');
+    if (tb) tb.checked = tracked.breakfast !== false;
+    if (tl) tl.checked = tracked.lunch !== false;
+    if (td) td.checked = tracked.dinner !== false;
+
+    // Rate Mode selector
+    const rateMode = s.rateMode || 'market';
+    const rateModeSelect = document.getElementById('settingsRateMode');
+    if (rateModeSelect) rateModeSelect.value = rateMode;
+
+    // Fixed Rates pricing fields
+    const fixedRatesSection = document.getElementById('settingsFixedRatesSection');
+    if (fixedRatesSection) {
+      fixedRatesSection.style.display = rateMode === 'fixed' ? 'block' : 'none';
+    }
+    const fixedRates = s.fixedRates || { breakfast: 30, lunch: 60, dinner: 60 };
+    const frb = document.getElementById('settingsFixedRateBreakfast');
+    const frl = document.getElementById('settingsFixedRateLunch');
+    const frd = document.getElementById('settingsFixedRateDinner');
+    if (frb) frb.value = fixedRates.breakfast || 0;
+    if (frl) frl.value = fixedRates.lunch || 0;
+    if (frd) frd.value = fixedRates.dinner || 0;
+
+    // Manager Bazar Duty toggle
+    const managerBazarToggle = document.getElementById('settingsManagerBazarToggle');
+    if (managerBazarToggle) managerBazarToggle.checked = s.managerBazarEnabled !== false;
+
+    // Mess Code display
+    const codeDisplay = document.getElementById('settingsMessCodeDisplay');
+    if (codeDisplay && this.info) {
+      codeDisplay.textContent = this.info.messCode || '-';
+    }
   },
 
   /**
@@ -168,6 +205,69 @@ const SettingsModule = {
     } catch (error) {
       console.error('Reset error:', error);
       Notifications.toast('error', 'Error', 'Failed to reset data.');
+    }
+  },
+
+  async updateTrackedMeals() {
+    const b = document.getElementById('settingsTrackedBreakfast').checked;
+    const l = document.getElementById('settingsTrackedLunch').checked;
+    const d = document.getElementById('settingsTrackedDinner').checked;
+
+    if (!b && !l && !d) {
+      Notifications.toast('warning', 'Invalid Input', 'At least one meal time must be active.');
+      this._populateUI(); // Reset UI
+      return;
+    }
+
+    try {
+      await db.ref(`dinings/${this.diningId}/settings/trackedMeals`).set({
+        breakfast: b,
+        lunch: l,
+        dinner: d
+      });
+      Notifications.toast('success', 'Settings Saved', 'Tracked meals updated.');
+    } catch (e) {
+      Notifications.toast('error', 'Error', 'Failed to update tracked meals.');
+    }
+  },
+
+  async updateRateMode(mode) {
+    try {
+      await db.ref(`dinings/${this.diningId}/settings/rateMode`).set(mode);
+      // Toggle inputs visibility
+      const fixedRatesSection = document.getElementById('settingsFixedRatesSection');
+      if (fixedRatesSection) {
+        fixedRatesSection.style.display = mode === 'fixed' ? 'block' : 'none';
+      }
+      Notifications.toast('success', 'Settings Saved', `Rate mode changed to ${mode === 'fixed' ? 'Fixed Rate' : 'Market Rate'}.`);
+    } catch (e) {
+      Notifications.toast('error', 'Error', 'Failed to update rate mode.');
+    }
+  },
+
+  async saveFixedRates() {
+    const b = parseFloat(document.getElementById('settingsFixedRateBreakfast').value) || 0;
+    const l = parseFloat(document.getElementById('settingsFixedRateLunch').value) || 0;
+    const d = parseFloat(document.getElementById('settingsFixedRateDinner').value) || 0;
+
+    try {
+      await db.ref(`dinings/${this.diningId}/settings/fixedRates`).set({
+        breakfast: b,
+        lunch: l,
+        dinner: d
+      });
+      Notifications.toast('success', 'Prices Saved', 'Fixed meal rates updated.');
+    } catch (e) {
+      Notifications.toast('error', 'Error', 'Failed to update fixed meal prices.');
+    }
+  },
+
+  async toggleManagerBazar(enabled) {
+    try {
+      await db.ref(`dinings/${this.diningId}/settings/managerBazarEnabled`).set(enabled);
+      Notifications.toast('success', 'Settings Saved', enabled ? 'Manager added to bazar rotation.' : 'Manager removed from bazar rotation.');
+    } catch (e) {
+      Notifications.toast('error', 'Error', 'Failed to update setting.');
     }
   },
 

@@ -5,8 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description"
-    content="DineDesk — Modern Dining Management System. Manage meals, deposits, and dining operations easily.">
-  <title>DineDesk — Dining Management</title>
+    content="DineDesk — Smart Dining Management for Messes. Track meals, manage deposits, split bills and run your mess stress-free.">
+  <title>DineDesk — Sign In</title>
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/variables.css">
@@ -37,34 +37,182 @@
   </div>
 
   <!-- ======== AUTH PAGE ======== -->
-  <div id="authPage" class="auth-page" style="display:none;">
-    <div class="auth-container">
+  <div id="authPage" class="auth-page-split" style="display:none;">
 
-      <!-- Brand -->
-      <div class="auth-brand">
-        <div class="auth-brand-logo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+    <!-- Left Pane (Green Banner on Desktop, Top Banner on Mobile) -->
+    <div class="auth-left-pane">
+
+      <!-- Floating Dining Animations -->
+      <div class="auth-float-icons" aria-hidden="true">
+        <!-- Filled Circle 1 (Large) -->
+        <div class="float-circle fi-1"></div>
+
+        <!-- Fork (Realistic outline) -->
+        <div class="float-icon float-icon--fork fi-2">
+          <svg viewBox="0 0 24 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
-            <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
-            <path d="M7 2v20" />
-            <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
+            <path d="M6 2 L6 18 M12 2 L12 18 M18 2 L18 18" />
+            <path d="M6 18 C6 22 18 22 18 18" />
+            <line x1="12" y1="20" x2="12" y2="62" />
+            <line x1="10" y1="58" x2="14" y2="58" />
           </svg>
         </div>
-        <h1>DineDesk</h1>
-        <p>Modern Dining Management System</p>
-      </div>
 
-      <!-- ======== LOGIN VIEW ======== -->
-      <div id="loginView" class="auth-view active">
-        <div class="auth-card">
-          <div class="auth-card-header">
-            <h2>Welcome Back</h2>
-            <p>Sign in to your dining account</p>
+        <!-- Spoon (Realistic outline with details) -->
+        <div class="float-icon float-icon--spoon fi-3">
+          <svg viewBox="0 0 24 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 2 C8 2 6 6 6 15 C6 22 9.5 25 12 27 L12 62" />
+            <path d="M12 2 C16 2 18 6 18 15 C18 22 14.5 25 12 27" />
+            <line x1="10" y1="58" x2="14" y2="58" />
+          </svg>
+        </div>
+
+        <!-- Knife (Realistic outline) -->
+        <div class="float-icon float-icon--knife fi-4">
+          <svg viewBox="0 0 24 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 2 C12 2 17 6 17 22 L12 28 L12 62" />
+            <line x1="12" y1="2" x2="12" y2="62" />
+            <line x1="10" y1="58" x2="14" y2="58" />
+          </svg>
+        </div>
+
+        <!-- Filled Circle 2 (Medium) -->
+        <div class="float-circle fi-5"></div>
+
+        <!-- Filled Circle 3 (Extra Large) -->
+        <div class="float-circle fi-6"></div>
+
+        <!-- Fork 2 (smaller) -->
+        <div class="float-icon float-icon--fork2 fi-7">
+          <svg viewBox="0 0 20 56" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M5 2 L5 16 M10 2 L10 16 M15 2 L15 16" />
+            <path d="M5 16 C5 19.5 15 19.5 15 16" />
+            <line x1="10" y1="18" x2="10" y2="54" />
+          </svg>
+        </div>
+
+        <!-- Spoon 2 (smaller) -->
+        <div class="float-icon float-icon--spoon2 fi-8">
+          <svg viewBox="0 0 20 56" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M10 2 C6.5 2 5 5 5 13 C5 19 8 21.5 10 23 L10 54" />
+            <path d="M10 2 C13.5 2 15 5 15 13 C15 19 12 21.5 10 23" />
+          </svg>
+        </div>
+      </div>
+      <div class="auth-left-content">
+        <!-- Logo -->
+        <div class="auth-left-logo">
+          <div class="logo-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+              <path d="M7 2v20" />
+              <path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
+            </svg>
+          </div>
+          <span>DineDesk</span>
+        </div>
+
+        <div class="auth-left-badge">DINING MANAGER &middot; BD</div>
+
+        <!-- Desktop-only Banner Content -->
+        <div class="desktop-header-content">
+          <h1 class="auth-left-title">Track meals.<br>Not spreadsheets.</h1>
+          <p class="auth-left-desc">Meals, deposits, bills and bazar for your whole mess &mdash; tracked, split and
+            settled in one place everyone can see.</p>
+
+          <div class="auth-features-list">
+            <div class="auth-feature-item">
+              <div class="auth-feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <div class="auth-feature-text">
+                <h4>Meal tracking that never lies</h4>
+                <p>Members log their meals before the cutoff &mdash; timestamps do the arguing for you.</p>
+              </div>
+            </div>
+            <div class="auth-feature-item">
+              <div class="auth-feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                  <line x1="8" y1="21" x2="16" y2="21" />
+                  <line x1="12" y1="17" x2="12" y2="21" />
+                </svg>
+              </div>
+              <div class="auth-feature-text">
+                <h4>Deposit &amp; balance at a glance</h4>
+                <p>Every member sees their balance in real time &mdash; no surprises at month-end.</p>
+              </div>
+            </div>
+            <div class="auth-feature-item">
+              <div class="auth-feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>
+              </div>
+              <div class="auth-feature-text">
+                <h4>Auto bill split to the taka</h4>
+                <p>Total cost split fairly by meals eaten &mdash; settled and cleared every month.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile-only Banner Content -->
+        <div class="mobile-header-content">
+          <div id="mobileHeaderSignIn" class="mobile-hdr-view active">
+            <h1 class="auth-left-title">Welcome back</h1>
+            <p class="auth-left-desc">Access your dining management dashboard.</p>
+          </div>
+          <div id="mobileHeaderSignUp" class="mobile-hdr-view">
+            <h1 class="auth-left-title">Create your account</h1>
+            <p class="auth-left-desc">Set up DineDesk for your mess in under two minutes.</p>
+          </div>
+          <div id="mobileHeaderForgot" class="mobile-hdr-view">
+            <h1 class="auth-left-title">Reset password</h1>
+            <p class="auth-left-desc">Enter your email, we will sent an verification code</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right Pane (Form Container Card) -->
+    <div class="auth-right-pane view-login">
+      <div class="auth-right-card">
+
+        <!-- Tabs Switcher -->
+        <div class="auth-tab-switcher">
+          <button type="button" class="auth-tab-btn active" id="tabBtnSignIn"
+            onclick="window.location.hash = 'login'">Sign
+            in</button>
+          <button type="button" class="auth-tab-btn" id="tabBtnSignUp" onclick="window.location.hash = 'register'">Sign
+            up</button>
+        </div>
+
+        <!-- ======== SIGN IN VIEW ======== -->
+        <div id="loginView" class="auth-pane-view active">
+          <!-- Desktop-only view header -->
+          <div class="auth-view-header desktop-only">
+            <h2>Welcome back</h2>
+            <p>Access your dining management dashboard.</p>
           </div>
 
           <!-- Error Message -->
-          <div id="loginError" class="auth-error">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          <div id="loginError" class="auth-error-alert" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
               stroke-linejoin="round">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
@@ -73,29 +221,36 @@
             <span id="loginErrorText">Invalid credentials</span>
           </div>
 
-          <form id="loginForm" class="auth-form" autocomplete="on">
-            <!-- Email or Username -->
+          <form id="loginForm" class="auth-form-body" autocomplete="on">
             <div class="form-group">
-              <label class="form-label" for="loginIdentifier">Email or Username</label>
+              <label class="form-label" for="loginIdentifier">Email</label>
               <div class="input-icon-wrapper">
-                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                <input type="text" id="loginIdentifier" class="form-input" placeholder="Enter email or username"
-                  required autocomplete="username">
+                <span class="field-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </span>
+                <input type="email" id="loginIdentifier" class="form-input" placeholder="you@example.com" required
+                  autocomplete="username">
               </div>
             </div>
 
-            <!-- Password -->
             <div class="form-group">
               <label class="form-label" for="loginPassword">Password</label>
-              <div class="password-wrapper">
-                <input type="password" id="loginPassword" class="form-input" placeholder="Enter your password" required
-                  autocomplete="current-password">
-                <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)"
-                  aria-label="Toggle password visibility">
+              <div class="input-icon-wrapper password-field-wrap">
+                <span class="field-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </span>
+                <input type="password" id="loginPassword" class="form-input" placeholder="At least 8 characters"
+                  required autocomplete="current-password">
+                <button type="button" class="eye-toggle"
+                  onclick="OnboardingAuth.togglePasswordVisibility('loginPassword', this)">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -103,52 +258,31 @@
                   </svg>
                 </button>
               </div>
+              <div class="forgot-pwd-wrap">
+                <a href="#" class="forgot-pwd-link" onclick="OnboardingAuth.forgotPassword(event)">Forgot password?</a>
+              </div>
             </div>
 
-            <button type="submit" class="btn btn-primary auth-btn" id="loginBtn">
-              <span class="btn-text">Sign In</span>
-              <span class="btn-loader">
-                <div class="spinner spinner-sm"
-                  style="border-top-color:white;border-color:rgba(255,255,255,0.3);border-top-color:white;"></div>
+            <button type="submit" class="btn-auth-submit" id="loginBtn" disabled>
+              <span class="btn-text">Sign in</span>
+              <span class="btn-loader" style="display:none;">
+                <div class="spinner-mini"></div>
               </span>
             </button>
           </form>
-
-          <div class="auth-divider">or</div>
-
-          <button type="button" class="btn btn-secondary btn-block" onclick="showView('registerView')"
-            id="showCreateDiningBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="16" />
-              <line x1="8" y1="12" x2="16" y2="12" />
-            </svg>
-            Create New Dining
-          </button>
         </div>
-      </div>
 
-      <!-- ======== REGISTER VIEW ======== -->
-      <div id="registerView" class="auth-view">
-        <div class="auth-card">
-          <button type="button" class="auth-back" onclick="showView('loginView')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Back to Login
-          </button>
-
-          <div class="auth-card-header">
-            <h2>Create Dining</h2>
-            <p>Set up your dining management system</p>
+        <!-- ======== SIGN UP VIEW ======== -->
+        <div id="registerView" class="auth-pane-view">
+          <!-- Desktop-only view header -->
+          <div class="auth-view-header desktop-only">
+            <h2>Create your account</h2>
+            <p>Set up DineDesk for your mess &mdash; it only takes two minutes.</p>
           </div>
 
           <!-- Error Message -->
-          <div id="registerError" class="auth-error">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          <div id="registerError" class="auth-error-alert" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
               stroke-linejoin="round">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
@@ -157,95 +291,125 @@
             <span id="registerErrorText">Error</span>
           </div>
 
-          <form id="registerForm" class="auth-form" autocomplete="off">
-            <!-- Manager Name & Dining Name -->
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="regManagerName">Manager Name</label>
-                <input type="text" id="regManagerName" class="form-input" placeholder="Your name" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="regDiningName">Dining Name</label>
-                <input type="text" id="regDiningName" class="form-input" placeholder="Hall Dining" required>
-              </div>
-            </div>
-
-            <!-- Email -->
+          <form id="registerForm" class="auth-form-body" autocomplete="off">
             <div class="form-group">
-              <label class="form-label" for="regEmail">Email Address</label>
+              <label class="form-label" for="regManagerName">Full name</label>
               <div class="input-icon-wrapper">
-                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-                <input type="email" id="regEmail" class="form-input" placeholder="you@example.com" required
-                  autocomplete="off">
+                <span class="field-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </span>
+                <input type="text" id="regManagerName" class="form-input" placeholder="Rahim Uddin" required>
               </div>
             </div>
 
-            <!-- Phone -->
             <div class="form-group">
-              <label class="form-label" for="regPhone">Phone Number</label>
+              <label class="form-label" for="regEmail">Email address</label>
               <div class="input-icon-wrapper">
-                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path
-                    d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
-                </svg>
-                <input type="tel" id="regPhone" class="form-input" placeholder="01XXXXXXXXX" required>
+                <span class="field-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </span>
+                <input type="email" id="regEmail" class="form-input" placeholder="you@example.com" required>
               </div>
             </div>
 
-            <!-- Passwords -->
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="regPassword">Password</label>
-                <div class="password-wrapper">
-                  <input type="password" id="regPassword" class="form-input" placeholder="Min 6 characters" required
-                    minlength="6" autocomplete="new-password">
-                  <button type="button" class="password-toggle" onclick="togglePassword('regPassword', this)"
-                    aria-label="Toggle password">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  </button>
-                </div>
+            <div class="form-group">
+              <label class="form-label" for="regPhone">Mobile number <span class="required-star">*</span></label>
+              <div class="input-icon-wrapper">
+                <span class="field-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path
+                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                  </svg>
+                </span>
+                <input type="tel" id="regPhone" class="form-input" placeholder="+8801XXXXXXXXX" required>
               </div>
-              <div class="form-group">
-                <label class="form-label" for="regConfirmPassword">Confirm Password</label>
-                <div class="password-wrapper">
-                  <input type="password" id="regConfirmPassword" class="form-input" placeholder="Re-enter password"
-                    required minlength="6" autocomplete="new-password">
-                  <button type="button" class="password-toggle" onclick="togglePassword('regConfirmPassword', this)"
-                    aria-label="Toggle password">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              <span class="field-hint" id="phoneHint"></span>
             </div>
 
-            <button type="submit" class="btn btn-primary auth-btn" id="registerBtn">
-              <span class="btn-text">Create Dining</span>
-              <span class="btn-loader">
-                <div class="spinner spinner-sm" style="border-color:rgba(255,255,255,0.3);border-top-color:white;">
-                </div>
+            <div class="form-group">
+              <label class="form-label" for="regPassword">Password</label>
+              <div class="input-icon-wrapper password-field-wrap">
+                <span class="field-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </span>
+                <input type="password" id="regPassword" class="form-input" placeholder="Min 8 characters" required
+                  minlength="8" autocomplete="new-password">
+                <button type="button" class="eye-toggle"
+                  onclick="OnboardingAuth.togglePasswordVisibility('regPassword', this)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+              </div>
+              <span class="field-hint" id="regPwdHint"></span>
+            </div>
+
+            <button type="submit" class="btn-auth-submit" id="registerBtn" disabled>
+              <span class="btn-text">Create account</span>
+              <span class="btn-loader" style="display:none;">
+                <div class="spinner-mini"></div>
               </span>
             </button>
           </form>
         </div>
 
-        <div class="auth-footer">
-          <p>Already have an account? <button type="button" onclick="showView('loginView')">Sign In</button></p>
-        </div>
-      </div>
+        <!-- ======== RESET PASSWORD VIEW ======== -->
+        <div id="forgotView" class="auth-pane-view">
+          <!-- Desktop-only view header -->
+          <div class="auth-view-header desktop-only">
+            <h2>Reset password</h2>
+            <p>Enter your email and we'll send a 6-digit code.</p>
+          </div>
 
+          <form id="forgotForm" class="auth-form-body" autocomplete="on">
+            <div class="form-group">
+              <label class="form-label" for="forgotEmail">Email</label>
+              <div class="input-icon-wrapper">
+                <span class="field-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </span>
+                <input type="email" id="forgotEmail" class="form-input" placeholder="you@example.com" required
+                  autocomplete="email">
+              </div>
+            </div>
+
+            <button type="submit" class="btn-auth-submit" id="forgotBtn" disabled>
+              <span class="btn-text">Send code</span>
+              <span class="btn-loader" style="display:none;">
+                <div class="spinner-mini"></div>
+              </span>
+            </button>
+          </form>
+
+          <div class="auth-forgot-back">
+            Remembered it? <a href="#" onclick="window.location.hash = 'login'; return false;">Sign in</a>
+          </div>
+        </div>
+
+        <div class="auth-right-footer">
+          By continuing you agree to the <a href="#">Terms of Service</a> &amp; <a href="#">Privacy Policy</a>.
+        </div>
+
+      </div>
     </div>
   </div>
 
@@ -264,23 +428,216 @@
   <script src="js/auth.js"></script>
 
   <script>
-    // Password toggle helper
-    function togglePassword(inputId, btn) {
-      const input = document.getElementById(inputId);
-      const isPassword = input.type === 'password';
-      input.type = isPassword ? 'text' : 'password';
-      btn.innerHTML = isPassword
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    /* ============================================================
+       VIEW TOGGLE
+    ============================================================ */
+    function showView(viewId) {
+      document.querySelectorAll('.auth-pane-view').forEach(v => v.classList.remove('active'));
+      const view = document.getElementById(viewId);
+      if (view) view.classList.add('active');
+
+      const tabSignIn = document.getElementById('tabBtnSignIn');
+      const tabSignUp = document.getElementById('tabBtnSignUp');
+      const mobileSignInHdr = document.getElementById('mobileHeaderSignIn');
+      const mobileSignUpHdr = document.getElementById('mobileHeaderSignUp');
+      const mobileForgotHdr = document.getElementById('mobileHeaderForgot');
+      const tabSwitcher = document.querySelector('.auth-tab-switcher');
+      const footer = document.querySelector('.auth-right-footer');
+      const rightPane = document.querySelector('.auth-right-pane');
+
+      if (rightPane) {
+        rightPane.classList.remove('view-login', 'view-register', 'view-forgot');
+      }
+
+      if (viewId === 'loginView') {
+        if (tabSignIn) tabSignIn.classList.add('active');
+        if (tabSignUp) tabSignUp.classList.remove('active');
+        if (mobileSignInHdr) mobileSignInHdr.classList.add('active');
+        if (mobileSignUpHdr) mobileSignUpHdr.classList.remove('active');
+        if (mobileForgotHdr) mobileForgotHdr.classList.remove('active');
+        if (tabSwitcher) tabSwitcher.style.display = 'flex';
+        if (footer) footer.style.display = 'block';
+        if (rightPane) rightPane.classList.add('view-login');
+      } else if (viewId === 'registerView') {
+        if (tabSignIn) tabSignIn.classList.remove('active');
+        if (tabSignUp) tabSignUp.classList.add('active');
+        if (mobileSignInHdr) mobileSignInHdr.classList.remove('active');
+        if (mobileSignUpHdr) mobileSignUpHdr.classList.add('active');
+        if (mobileForgotHdr) mobileForgotHdr.classList.remove('active');
+        if (tabSwitcher) tabSwitcher.style.display = 'flex';
+        if (footer) footer.style.display = 'block';
+        if (rightPane) rightPane.classList.add('view-register');
+      } else if (viewId === 'forgotView') {
+        if (tabSignIn) tabSignIn.classList.remove('active');
+        if (tabSignUp) tabSignUp.classList.remove('active');
+        if (mobileSignInHdr) mobileSignInHdr.classList.remove('active');
+        if (mobileSignUpHdr) mobileSignUpHdr.classList.remove('active');
+        if (mobileForgotHdr) mobileForgotHdr.classList.add('active');
+        if (tabSwitcher) tabSwitcher.style.display = 'none';
+        if (footer) footer.style.display = 'none';
+        if (rightPane) rightPane.classList.add('view-forgot');
+      }
+      document.querySelectorAll('.auth-error-alert').forEach(e => e.classList.remove('visible'));
     }
 
-    // View toggle helper
-    function showView(viewId) {
-      document.querySelectorAll('.auth-view').forEach(v => v.classList.remove('active'));
-      document.getElementById(viewId).classList.add('active');
-      // Clear errors
-      document.querySelectorAll('.auth-error').forEach(e => e.classList.remove('visible'));
+    /* ============================================================
+       ROUTING
+    ============================================================ */
+    function handleRouting() {
+      const hash = window.location.hash;
+      if (hash === '#signup' || hash === '#register') {
+        showView('registerView');
+      } else if (hash === '#forgot') {
+        showView('forgotView');
+      } else {
+        showView('loginView');
+      }
     }
+
+    window.addEventListener('hashchange', handleRouting);
+    // Initialize routing on load
+    handleRouting();
+
+    /* ============================================================
+       HELPER UTILITIES
+    ============================================================ */
+    const isValidEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+    const isValidPhone = v => /^[0-9]{11}$/.test(v.trim().replace(/[\s\-+]/g, ''));
+
+    function setHint(id, msg, isError) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = msg;
+      el.className = 'field-hint' + (msg ? (isError ? ' hint-error' : ' hint-ok') : '');
+    }
+
+    function setBtn(id, enabled) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.disabled = !enabled;
+      btn.classList.toggle('btn-disabled', !enabled);
+    }
+
+    /* ============================================================
+       SIGN-IN VALIDATION (Requires valid email format + password >= 8 chars)
+       ============================================================ */
+    function checkLoginReady() {
+      const email = document.getElementById('loginIdentifier').value.trim();
+      const pwd = document.getElementById('loginPassword').value;
+      const ok = isValidEmail(email) && pwd.length >= 8;
+      setBtn('loginBtn', ok);
+    }
+
+    document.getElementById('loginIdentifier').addEventListener('input', checkLoginReady);
+    document.getElementById('loginPassword').addEventListener('input', checkLoginReady);
+
+    /* ============================================================
+       SIGN-UP VALIDATION
+    ============================================================ */
+    function checkRegisterReady() {
+      const name = document.getElementById('regManagerName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const phone = document.getElementById('regPhone').value.trim().replace(/[\s\-+]/g, '');
+      const pwd = document.getElementById('regPassword').value;
+
+      const nameOk = name.length >= 2;
+      const emailOk = isValidEmail(email);
+      const phoneOk = isValidPhone(phone);
+      const pwdOk = pwd.length >= 8;
+
+      setBtn('registerBtn', nameOk && emailOk && phoneOk && pwdOk);
+    }
+
+    /* -- Phone inline validation -- */
+    document.getElementById('regPhone').addEventListener('input', function () {
+      const val = this.value.trim().replace(/[\s\-+]/g, '');
+      if (val.length === 0) {
+        setHint('phoneHint', '', false);
+      } else if (!isValidPhone(val)) {
+        setHint('phoneHint', 'Enter a valid mobile number (11 digits)', true);
+      } else {
+        setHint('phoneHint', '', false);
+      }
+      checkRegisterReady();
+    });
+
+    /* -- Register password inline validation -- */
+    document.getElementById('regPassword').addEventListener('input', function () {
+      const val = this.value;
+      if (val.length === 0) {
+        setHint('regPwdHint', '', false);
+      } else if (val.length < 8) {
+        setHint('regPwdHint', 'At least 8 characters required', true);
+      } else {
+        setHint('regPwdHint', '', false);
+      }
+      checkRegisterReady();
+    });
+
+    /* -- Other register field listeners -- */
+    ['regManagerName', 'regEmail'].forEach(id => {
+      document.getElementById(id).addEventListener('input', checkRegisterReady);
+    });
+
+    /* ============================================================
+       FORGOT PASSWORD VALIDATION
+    ============================================================ */
+    function checkForgotReady() {
+      const email = document.getElementById('forgotEmail').value.trim();
+      const ok = isValidEmail(email);
+      setBtn('forgotBtn', ok);
+    }
+
+    document.getElementById('forgotEmail').addEventListener('input', checkForgotReady);
+
+    /* ============================================================
+       FORGOT PASSWORD FORM SUBMISSION
+    ============================================================ */
+    document.getElementById('forgotForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const email = document.getElementById('forgotEmail').value.trim();
+      const btn = document.getElementById('forgotBtn');
+      const loader = btn.querySelector('.btn-loader');
+      const text = btn.querySelector('.btn-text');
+
+      if (loader) loader.style.display = 'inline-block';
+      if (text) text.style.display = 'none';
+      btn.disabled = true;
+
+      // Simulate sending 6-digit code
+      setTimeout(() => {
+        if (loader) loader.style.display = 'none';
+        if (text) text.style.display = 'inline';
+        btn.disabled = false;
+
+        if (typeof Notifications !== 'undefined') {
+          Notifications.toast('success', 'Reset Code Sent', 'A 6-digit reset code has been sent to ' + email);
+        }
+        window.location.hash = 'login';
+        // Clear field
+        document.getElementById('forgotEmail').value = '';
+        checkForgotReady();
+      }, 1500);
+    });
+
+    /* ============================================================
+       PASSWORD TOGGLE
+    ============================================================ */
+    const OnboardingAuth = {
+      togglePasswordVisibility(id, btn) {
+        const input = document.getElementById(id);
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        btn.innerHTML = isPassword
+          ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+          : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+        btn.classList.toggle('visible', !isPassword);
+      },
+      forgotPassword(e) {
+        e.preventDefault();
+        window.location.hash = 'forgot';
+      }
+    };
   </script>
 </body>
 

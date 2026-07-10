@@ -273,6 +273,26 @@ const MealChartModule = {
       const users = usersSnap.val() || {};
       const settings = settingsSnap.val() || {};
       const isManagerMealEnabled = !!settings.managerMealEnabled;
+      const trackedMeals = settings.trackedMeals || { breakfast: true, lunch: true, dinner: true };
+
+      let colCount = 1;
+      if (trackedMeals.breakfast !== false) colCount++;
+      if (trackedMeals.lunch !== false) colCount++;
+      if (trackedMeals.dinner !== false) colCount++;
+
+      // Update table headers dynamically
+      const tableEl = document.querySelector('.meal-chart-table');
+      if (tableEl) {
+        const thead = tableEl.querySelector('thead');
+        if (thead) {
+          let headersHTML = '<tr><th>Member</th>';
+          if (trackedMeals.breakfast !== false) headersHTML += '<th class="text-center" style="width: 120px;">Breakfast</th>';
+          if (trackedMeals.lunch !== false) headersHTML += '<th class="text-center" style="width: 120px;">Lunch</th>';
+          if (trackedMeals.dinner !== false) headersHTML += '<th class="text-center" style="width: 120px;">Dinner</th>';
+          headersHTML += '</tr>';
+          thead.innerHTML = headersHTML;
+        }
+      }
 
       const userEntries = Object.entries(users).filter(([id, user]) => {
         if (user.role === 'admin') {
@@ -282,7 +302,7 @@ const MealChartModule = {
       });
 
       if (userEntries.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center p-6" style="color:var(--text-tertiary);">No members in dining.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${colCount}" class="text-center p-6" style="color:var(--text-tertiary);">No members in dining.</td></tr>`;
         return;
       }
 
@@ -308,16 +328,16 @@ const MealChartModule = {
           ? `<span class="meal-badge active">${dCount}</span>`
           : `<span class="meal-badge inactive">—</span>`;
 
-        return `
+        let rowHTML = `
           <tr>
             <td>
               <span style="font-weight:var(--weight-semibold); color:var(--text-primary);">${u.name}</span>
-            </td>
-            <td class="text-center">${bBadge}</td>
-            <td class="text-center">${lBadge}</td>
-            <td class="text-center">${dBadge}</td>
-          </tr>
-        `;
+            </td>`;
+        if (trackedMeals.breakfast !== false) rowHTML += `<td class="text-center">${bBadge}</td>`;
+        if (trackedMeals.lunch !== false) rowHTML += `<td class="text-center">${lBadge}</td>`;
+        if (trackedMeals.dinner !== false) rowHTML += `<td class="text-center">${dBadge}</td>`;
+        rowHTML += `</tr>`;
+        return rowHTML;
       }).join('');
 
     } catch (e) {

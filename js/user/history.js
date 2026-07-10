@@ -9,6 +9,8 @@ const HistoryModule = {
   init(diningId, userId) {
     this.diningId = diningId;
     this.userId = userId;
+    this.mealsBreakdown = { breakfast: 0, lunch: 0, dinner: 0 };
+    this.settings = {};
 
     // Listen to deposits for this user
     db.ref(`dinings/${diningId}/deposits`).orderByChild('userId').equalTo(userId).on('value', (snap) => {
@@ -18,10 +20,38 @@ const HistoryModule = {
       this.renderDepositHistory(deposits);
     });
 
+    // Listen to settings
+    db.ref(`dinings/${diningId}/settings`).on('value', (snap) => {
+      this.settings = snap.val() || {};
+      if (this.currentUserData) this.renderProfile(this.currentUserData);
+    });
+
+    // Listen to meals breakdown
+    db.ref(`dinings/${diningId}/meals`).on('value', (snap) => {
+      this.mealsBreakdown = { breakfast: 0, lunch: 0, dinner: 0 };
+      const allMeals = snap.val() || {};
+      Object.values(allMeals).forEach(monthData => {
+        Object.values(monthData).forEach(dayData => {
+          Object.entries(dayData).forEach(([type, typeData]) => {
+            if (typeof typeData === 'object' && typeData[this.userId] !== undefined) {
+              const count = parseFloat(typeData[this.userId]) || 0;
+              if (this.mealsBreakdown[type] !== undefined) {
+                this.mealsBreakdown[type] += count;
+              }
+            }
+          });
+        });
+      });
+      if (this.currentUserData) this.renderProfile(this.currentUserData);
+    });
+
     // Listen to user data for profile
     db.ref(`dinings/${diningId}/users/${userId}`).on('value', (snap) => {
       const user = snap.val();
-      if (user) this.renderProfile(user);
+      if (user) {
+        this.currentUserData = user;
+        this.renderProfile(user);
+      }
     });
   },
 
@@ -59,8 +89,11 @@ const HistoryModule = {
     }
 
     // Profile stats
+    this.currentUserData = user;
     const mealRate = DineDesk.state.mealRate || 0;
-    const mealCost = Utils.calcMealCost(mealRate, user.totalMeals);
+    const rateMode = this.settings?.rateMode || 'market';
+    const fixedRates = rateMode === 'fixed' ? (this.settings?.fixedRates || null) : null;
+    const mealCost = Utils.calcMealCost(mealRate, user.totalMeals, this.mealsBreakdown, fixedRates);
     const balance = Utils.calcBalance(user.totalDeposit, mealCost);
 
     const container = document.getElementById('profileStats');

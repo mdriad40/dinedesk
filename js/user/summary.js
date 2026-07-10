@@ -188,11 +188,12 @@ const SummaryModule = {
 
       // 2. Count Monthly Meals by User
       const userMeals = {};
+      const userMealsBreakdown = {};
       let totalMeals = 0;
 
       // Group meals: meals snapshot has format { "day": { "type": { "userId": count } } }
-      Object.values(meals).forEach(dayData => {
-        Object.values(dayData).forEach(typeData => {
+      Object.entries(meals).forEach(([day, dayData]) => {
+        Object.entries(dayData).forEach(([type, typeData]) => {
           if (typeof typeData === 'object') {
             Object.entries(typeData).forEach(([uId, count]) => {
               const u = users[uId];
@@ -202,13 +203,33 @@ const SummaryModule = {
               const mealCount = parseFloat(count) || 0;
               userMeals[uId] = (userMeals[uId] || 0) + mealCount;
               totalMeals += mealCount;
+              
+              if (!userMealsBreakdown[uId]) {
+                userMealsBreakdown[uId] = { breakfast: 0, lunch: 0, dinner: 0 };
+              }
+              if (userMealsBreakdown[uId][type] !== undefined) {
+                userMealsBreakdown[uId][type] += mealCount;
+              }
             });
           }
         });
       });
 
       // 3. Compute Monthly Meal Rate
-      const mealRate = totalMeals > 0 ? (monthBazarTotal / totalMeals) : 0;
+      const rateMode = settings.rateMode || 'market';
+      const fixedRates = rateMode === 'fixed' ? (settings.fixedRates || { breakfast: 0, lunch: 0, dinner: 0 }) : null;
+      let mealRate = 0;
+      if (rateMode === 'fixed') {
+        const trackedMeals = settings.trackedMeals || { breakfast: true, lunch: true, dinner: true };
+        const activeRates = [];
+        if (trackedMeals.breakfast) activeRates.push(fixedRates.breakfast || 0);
+        if (trackedMeals.lunch) activeRates.push(fixedRates.lunch || 0);
+        if (trackedMeals.dinner) activeRates.push(fixedRates.dinner || 0);
+        mealRate = activeRates.length > 0 ? (activeRates.reduce((a,b) => a+b, 0) / activeRates.length) : 0;
+      } else {
+        mealRate = totalMeals > 0 ? (monthBazarTotal / totalMeals) : 0;
+      }
+
       if (rateValEl) {
         rateValEl.textContent = Utils.currency(mealRate);
       }
@@ -252,7 +273,8 @@ const SummaryModule = {
       // Render cards
       listEl.innerHTML = userEntries.map(([id, u]) => {
         const uMeals    = userMeals[id] || 0;
-        const uMealCost = uMeals * mealRate;
+        const uMealsBreakdown = userMealsBreakdown[id] || { breakfast: 0, lunch: 0, dinner: 0 };
+        const uMealCost = Utils.calcMealCost(mealRate, uMeals, uMealsBreakdown, fixedRates);
         const uDeposit  = userDeposits[id] || 0;   // this month's deposits only
         const uOtherCost = userOtherCosts[id] || 0;
         const uTotalCost = uMealCost + uOtherCost;

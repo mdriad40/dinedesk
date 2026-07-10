@@ -69,9 +69,22 @@ window.DineDesk = {
         const mapping = mappingSnap.val();
 
         if (!mapping) {
-          console.error('[DineDesk] No dining found for user');
-          Notifications.toast('error', 'Error', 'No dining found for your account.');
-          auth.signOut();
+          console.log('[DineDesk] No dining mapping found. Showing onboarding...');
+          // Fetch user details from users/{uid}
+          const userProfileSnap = await db.ref(`users/${user.uid}`).once('value');
+          const profile = userProfileSnap.val() || { name: user.displayName || 'User', email: user.email };
+          // Hide loader, show onboardingPage
+          document.getElementById('pageLoader').style.display = 'none';
+          document.getElementById('onboardingPage').style.display = 'flex';
+          
+          if (window.Onboarding) {
+            Onboarding.init({
+              uid: user.uid,
+              name: profile.name,
+              email: profile.email,
+              phone: profile.phone || ''
+            });
+          }
           return;
         }
 
@@ -250,30 +263,46 @@ window.DineDesk = {
         });
       });
 
-      this.state.mealRate = Utils.calcMealRate(totalBazar, totalMeals);
-      this.state.totalMeals = totalMeals;
-      this.state.totalBazar = totalBazar;
+      const rateMode = settings.rateMode || 'market';
+      if (rateMode === 'fixed') {
+        const trackedMeals = settings.trackedMeals || { breakfast: true, lunch: true, dinner: true };
+        const fixedRates = settings.fixedRates || { breakfast: 0, lunch: 0, dinner: 0 };
+        const activeRates = [];
+        if (trackedMeals.breakfast) activeRates.push(fixedRates.breakfast || 0);
+        if (trackedMeals.lunch) activeRates.push(fixedRates.lunch || 0);
+        if (trackedMeals.dinner) activeRates.push(fixedRates.dinner || 0);
+        
+        const avgRate = activeRates.length > 0 ? (activeRates.reduce((a,b)=>a+b, 0) / activeRates.length) : 0;
+        this.state.mealRate = avgRate;
+        this.state.totalMeals = totalMeals;
+        this.state.totalBazar = totalBazar;
+        this.state.monthlyMealRate = avgRate;
+      } else {
+        this.state.mealRate = Utils.calcMealRate(totalBazar, totalMeals);
+        this.state.totalMeals = totalMeals;
+        this.state.totalBazar = totalBazar;
 
-      // Calculate current-month meal rate
-      const _currentMonth = Utils.currentMonth();
-      let _monthlyBazar = 0;
-      let _monthlyMeals = 0;
-      Object.values(bazars).forEach(b => {
-        if (b.date && b.date.startsWith(_currentMonth)) _monthlyBazar += Utils.num(b.amount);
-      });
-      const _monthData = meals[_currentMonth] || {};
-      Object.values(_monthData).forEach(dayData => {
-        Object.values(dayData).forEach(typeData => {
-          if (typeof typeData === 'object') {
-            Object.entries(typeData).forEach(([uId, c]) => {
-              const user = users[uId];
-              if (user && user.role === 'admin' && !isManagerMealEnabled) return;
-              _monthlyMeals += parseInt(c) || 0;
-            });
-          }
+        // Calculate current-month meal rate
+        const _currentMonth = Utils.currentMonth();
+        let _monthlyBazar = 0;
+        let _monthlyMeals = 0;
+        Object.values(bazars).forEach(b => {
+          if (b.date && b.date.startsWith(_currentMonth)) _monthlyBazar += Utils.num(b.amount);
         });
-      });
-      this.state.monthlyMealRate = _monthlyMeals > 0 ? _monthlyBazar / _monthlyMeals : 0;
+        const _monthData = meals[_currentMonth] || {};
+        Object.values(_monthData).forEach(dayData => {
+          Object.values(dayData).forEach(typeData => {
+            if (typeof typeData === 'object') {
+              Object.entries(typeData).forEach(([uId, c]) => {
+                const user = users[uId];
+                if (user && user.role === 'admin' && !isManagerMealEnabled) return;
+                _monthlyMeals += parseInt(c) || 0;
+              });
+            }
+          });
+        });
+        this.state.monthlyMealRate = _monthlyMeals > 0 ? _monthlyBazar / _monthlyMeals : 0;
+      }
 
       // Also calculate total deposits
       const depositsSnap = await db.ref(`dinings/${this.state.diningId}/deposits`).once('value');

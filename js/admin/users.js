@@ -11,8 +11,39 @@ const UsersModule = {
    */
   init(diningId) {
     this.diningId = diningId;
-    const usersRef = db.ref(`dinings/${diningId}/users`);
+    this.users = {};
+    this.mealsBreakdown = {};
+    this.settings = {};
 
+    db.ref(`dinings/${diningId}/settings`).on('value', (snap) => {
+      this.settings = snap.val() || {};
+      if (Object.keys(this.users).length > 0) this.render();
+    });
+
+    db.ref(`dinings/${diningId}/meals`).on('value', (snap) => {
+      this.mealsBreakdown = {};
+      const allMeals = snap.val() || {};
+      Object.values(allMeals).forEach(monthData => {
+        Object.values(monthData).forEach(dayData => {
+          Object.entries(dayData).forEach(([type, typeData]) => {
+            if (typeof typeData === 'object') {
+              Object.entries(typeData).forEach(([uid, count]) => {
+                const c = parseFloat(count) || 0;
+                if (!this.mealsBreakdown[uid]) {
+                  this.mealsBreakdown[uid] = { breakfast: 0, lunch: 0, dinner: 0 };
+                }
+                if (this.mealsBreakdown[uid][type] !== undefined) {
+                  this.mealsBreakdown[uid][type] += c;
+                }
+              });
+            }
+          });
+        });
+      });
+      if (Object.keys(this.users).length > 0) this.render();
+    });
+
+    const usersRef = db.ref(`dinings/${diningId}/users`);
     usersRef.on('value', (snap) => {
       this.users = snap.val() || {};
       this.render();
@@ -45,9 +76,12 @@ const UsersModule = {
 
     // Calculate meal rate for display
     const mealRate = DineDesk.state.mealRate || 0;
+    const rateMode = this.settings?.rateMode || 'market';
+    const fixedRates = rateMode === 'fixed' ? (this.settings?.fixedRates || null) : null;
 
     grid.innerHTML = userEntries.map(([id, user]) => {
-      const mealCost = Utils.calcMealCost(mealRate, user.totalMeals);
+      const uBreakdown = this.mealsBreakdown[id] || { breakfast: 0, lunch: 0, dinner: 0 };
+      const mealCost = Utils.calcMealCost(mealRate, user.totalMeals, uBreakdown, fixedRates);
       const balance = Utils.calcBalance(user.totalDeposit, mealCost);
       const balanceClass = balance >= 0 ? 'positive' : '';
       const roleBadge = user.role === 'admin'

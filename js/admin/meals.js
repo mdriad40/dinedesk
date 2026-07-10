@@ -24,6 +24,40 @@ const MealsModule = {
       });
     }
 
+    // Render tabs dynamically based on settings
+    db.ref(`dinings/${diningId}/settings`).on('value', (snap) => {
+      const s = snap.val() || {};
+      const trackedMeals = s.trackedMeals || { breakfast: true, lunch: true, dinner: true };
+      
+      const tabContainer = document.getElementById('mealTypeTabs');
+      if (tabContainer) {
+        tabContainer.innerHTML = '';
+        const mealsList = [
+          { type: 'breakfast', label: '☀️ Breakfast' },
+          { type: 'lunch', label: '🍱 Lunch' },
+          { type: 'dinner', label: '🌙 Dinner' }
+        ];
+        
+        let firstActive = null;
+        mealsList.forEach(m => {
+          if (trackedMeals[m.type] !== false) {
+            if (!firstActive) firstActive = m.type;
+            const activeClass = this.selectedType === m.type ? 'active' : '';
+            tabContainer.innerHTML += `
+              <button class="meal-type-tab ${activeClass}" data-type="${m.type}"
+                onclick="DineDesk.meals.selectType('${m.type}')">${m.label}</button>
+            `;
+          }
+        });
+        
+        // If current selected type is disabled, switch to first active
+        if (trackedMeals[this.selectedType] === false && firstActive) {
+          this.selectedType = firstActive;
+          this.renderUserGrid();
+        }
+      }
+    });
+
     // Setup realtime listener for current month's meals
     this._listenMeals();
   },

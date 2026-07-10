@@ -68,24 +68,58 @@ const OverviewModule = {
         totalBazar += Utils.num(b.amount);
       });
 
-      // Count total meals
+      // Count total meals and breakdown
+      const userMealsBreakdown = {};
       Object.values(meals).forEach(monthData => {
-        Object.values(monthData).forEach(dayData => {
-          Object.values(dayData).forEach(typeData => {
+        Object.entries(monthData).forEach(([day, dayData]) => {
+          Object.entries(dayData).forEach(([type, typeData]) => {
             if (typeof typeData === 'object') {
               Object.entries(typeData).forEach(([uId, count]) => {
                 const u = users[uId];
                 if (u && u.role === 'admin' && !this.managerMealEnabled) {
                   return; // Skip manager meals
                 }
-                totalMeals += parseInt(count) || 0;
+                const c = parseInt(count) || 0;
+                totalMeals += c;
+                if (!userMealsBreakdown[uId]) {
+                  userMealsBreakdown[uId] = { breakfast: 0, lunch: 0, dinner: 0 };
+                }
+                if (userMealsBreakdown[uId][type] !== undefined) {
+                  userMealsBreakdown[uId][type] += c;
+                }
               });
             }
           });
         });
       });
+      this.userMealsBreakdown = userMealsBreakdown;
 
-      const mealRate = Utils.calcMealRate(totalBazar, totalMeals);
+      // Calculate meal rate
+      const rateMode = settings.rateMode || 'market';
+      const fixedRates = rateMode === 'fixed' ? (settings.fixedRates || { breakfast: 0, lunch: 0, dinner: 0 }) : null;
+      let mealRate = 0;
+      if (rateMode === 'fixed') {
+        const trackedMeals = settings.trackedMeals || { breakfast: true, lunch: true, dinner: true };
+        const activeRates = [];
+        if (trackedMeals.breakfast) activeRates.push(fixedRates.breakfast || 0);
+        if (trackedMeals.lunch) activeRates.push(fixedRates.lunch || 0);
+        if (trackedMeals.dinner) activeRates.push(fixedRates.dinner || 0);
+        mealRate = activeRates.length > 0 ? (activeRates.reduce((a,b)=>a+b, 0) / activeRates.length) : 0;
+      } else {
+        mealRate = Utils.calcMealRate(totalBazar, totalMeals);
+      }
+
+      // Calculate total cost
+      let totalCost = 0;
+      const activeEntries = Object.entries(users).filter(([id, u]) => {
+        if (u.role === 'admin') return !!this.managerMealEnabled;
+        return true;
+      });
+      activeEntries.forEach(([id, u]) => {
+        const uBreakdown = userMealsBreakdown[id] || { breakfast: 0, lunch: 0, dinner: 0 };
+        totalCost += Utils.calcMealCost(mealRate, u.totalMeals || 0, uBreakdown, fixedRates);
+      });
+
       const netBalance = totalDeposit - totalDeductions - totalBazar;
 
       // Update global state
@@ -94,7 +128,7 @@ const OverviewModule = {
       DineDesk.state.totalBazar = totalBazar;
 
       // Render overview stats
-      this.renderStats(totalDeposit, totalMeals, mealRate, totalBazar, netBalance);
+      this.renderStats(totalDeposit, totalMeals, mealRate, totalBazar, netBalance, totalCost);
 
       const isAdmin = DineDesk.state.role === 'admin';
       const memberStatsSection = document.getElementById('overviewMemberStatsSection');
@@ -114,7 +148,7 @@ const OverviewModule = {
 
       if (isAdmin) {
         // Render member stats table
-        this.renderMemberStats(users, mealRate);
+        this.renderMemberStats(users, mealRate, fixedRates);
 
         // Render bazar history
         this.renderBazarHistory(bazars);
@@ -128,11 +162,9 @@ const OverviewModule = {
   /**
    * Render overview stat cards
    */
-  renderStats(totalDeposit, totalMeals, mealRate, totalBazar, netBalance) {
+  renderStats(totalDeposit, totalMeals, mealRate, totalBazar, netBalance, totalCost) {
     const container = document.getElementById('overviewStats');
     if (!container) return;
-
-    const totalCost = totalMeals * mealRate;
 
     container.innerHTML = `
       <div class="stat-card">
@@ -195,7 +227,7 @@ const OverviewModule = {
   /**
    * Render member stats table
    */
-  renderMemberStats(users, mealRate) {
+  renderMemberStats(users, mealRate, fixedRates) {
     const tbody = document.getElementById('memberStatsBody');
     if (!tbody) return;
 
@@ -211,7 +243,8 @@ const OverviewModule = {
     }
 
     tbody.innerHTML = entries.map(([id, u]) => {
-      const mealCost = Utils.calcMealCost(mealRate, u.totalMeals);
+      const uBreakdown = this.userMealsBreakdown[id] || { breakfast: 0, lunch: 0, dinner: 0 };
+      const mealCost = Utils.calcMealCost(mealRate, u.totalMeals || 0, uBreakdown, fixedRates);
       const balance = Utils.calcBalance(u.totalDeposit, mealCost);
       const status = balance >= 0
         ? '<span class="badge badge-accent">Paid</span>'
