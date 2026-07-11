@@ -1039,7 +1039,7 @@
   }
 
   .onboarding-right.step-welcome-active {
-    padding: 2rem 1rem;
+    padding: 2rem 12px;
     background-color: #f8fafc;
   }
 
@@ -1048,6 +1048,55 @@
     box-shadow: none !important;
     border: none !important;
     padding-top: 25px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  /* Choice cards responsiveness overrides on mobile */
+  .onboarding-right.step-welcome-active .choice-card {
+    padding: 1rem 12px !important;
+    gap: 0.75rem !important;
+    border-radius: 16px !important;
+  }
+
+  .onboarding-right.step-welcome-active .choice-glass-icon-wrapper {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+  }
+
+  .onboarding-right.step-welcome-active .choice-glass-icon svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .onboarding-right.step-welcome-active .choice-text {
+    padding-right: 0.25rem !important;
+  }
+
+  .onboarding-right.step-welcome-active .choice-text h3 {
+    font-size: 1rem !important;
+    margin-bottom: 2px !important;
+  }
+
+  .onboarding-right.step-welcome-active .choice-text p {
+    font-size: 0.78rem !important;
+    line-height: 1.35 !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .onboarding-right.step-welcome-active .choice-chevron {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .onboarding-right.step-welcome-active .choice-chevron svg {
+    width: 16px !important;
+    height: 16px !important;
   }
 
   .onboarding-right:not(.step-welcome-active) {
