@@ -234,18 +234,21 @@ const SummaryModule = {
         rateValEl.textContent = Utils.currency(mealRate);
       }
 
-      // 4. Calculate deposits and deductions for this month
+      // 4. Calculate deposits, other costing, and deductions for this month
       const userDeposits = {};
       const userOtherCosts = {};
+      const userDeductions = {};
 
       Object.values(allDeposits).forEach(d => {
         if (!d.userId || !d.date || !d.date.startsWith(formattedMonth)) return;
 
-        const amount = parseFloat(d.amount) || 0;
+        const amount = Math.abs(parseFloat(d.amount) || 0);
         if (d.type === 'deposit') {
           userDeposits[d.userId] = (userDeposits[d.userId] || 0) + amount;
+        } else if (d.type === 'other_costing') {
+          userOtherCosts[d.userId] = (userOtherCosts[d.userId] || 0) + amount;
         } else if (d.type === 'deduction') {
-          userOtherCosts[d.userId] = (userOtherCosts[d.userId] || 0) + Math.abs(amount);
+          userDeductions[d.userId] = (userDeductions[d.userId] || 0) + amount;
         }
       });
 
@@ -277,8 +280,9 @@ const SummaryModule = {
         const uMealCost = Utils.calcMealCost(mealRate, uMeals, uMealsBreakdown, fixedRates);
         const uDeposit  = userDeposits[id] || 0;   // this month's deposits only
         const uOtherCost = userOtherCosts[id] || 0;
+        const uDeduction = userDeductions[id] || 0;
         const uTotalCost = uMealCost + uOtherCost;
-        const uBalance   = uDeposit - uTotalCost;   // this month balance
+        const uBalance   = uDeposit - uTotalCost - uDeduction;   // this month balance
         const isPositive = uBalance >= 0;
 
         return `
@@ -312,12 +316,12 @@ const SummaryModule = {
                   <div class="sc-cell-value">${Utils.currency(uOtherCost)}</div>
                 </div>
                 <div class="sc-cell">
-                  <div class="sc-cell-label">Total Cost</div>
-                  <div class="sc-cell-value">${Utils.currency(uTotalCost)}</div>
+                  <div class="sc-cell-label">Deduction</div>
+                  <div class="sc-cell-value" style="color:var(--danger-600);">${Utils.currency(uDeduction)}</div>
                 </div>
                 <div class="sc-cell">
-                  <div class="sc-cell-label">Balance</div>
-                  <div class="sc-cell-value ${isPositive ? 'sc-positive' : 'sc-negative'}">${Utils.currency(uBalance)}</div>
+                  <div class="sc-cell-label" style="font-weight:var(--weight-bold);">Balance</div>
+                  <div class="sc-cell-value ${isPositive ? 'sc-positive' : 'sc-negative'}" style="font-weight:var(--weight-bold);">${Utils.currency(uBalance)}</div>
                 </div>
               </div>
             </div>

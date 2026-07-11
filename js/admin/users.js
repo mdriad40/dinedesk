@@ -49,6 +49,11 @@ const UsersModule = {
       this.render();
       this._updateUserCount();
     });
+
+    db.ref(`dinings/${diningId}/deposits`).on('value', (snap) => {
+      this.deposits = snap.val() || {};
+      if (Object.keys(this.users).length > 0) this.render();
+    });
   },
 
   /**
@@ -79,10 +84,33 @@ const UsersModule = {
     const rateMode = this.settings?.rateMode || 'market';
     const fixedRates = rateMode === 'fixed' ? (this.settings?.fixedRates || null) : null;
 
+    // Aggregate deposits by user
+    const uDeposits = {};
+    const uOtherCosts = {};
+    const uDeductions = {};
+
+    Object.values(this.deposits || {}).forEach(d => {
+      if (!d.userId) return;
+      const amt = Math.abs(Utils.num(d.amount));
+      if (d.type === 'deposit') {
+        uDeposits[d.userId] = (uDeposits[d.userId] || 0) + amt;
+      } else if (d.type === 'other_costing') {
+        uOtherCosts[d.userId] = (uOtherCosts[d.userId] || 0) + amt;
+      } else if (d.type === 'deduction') {
+        uDeductions[d.userId] = (uDeductions[d.userId] || 0) + amt;
+      }
+    });
+
     grid.innerHTML = userEntries.map(([id, user]) => {
       const uBreakdown = this.mealsBreakdown[id] || { breakfast: 0, lunch: 0, dinner: 0 };
       const mealCost = Utils.calcMealCost(mealRate, user.totalMeals, uBreakdown, fixedRates);
-      const balance = Utils.calcBalance(user.totalDeposit, mealCost);
+      
+      const deposit = uDeposits[id] || 0;
+      const otherCost = uOtherCosts[id] || 0;
+      const deduction = uDeductions[id] || 0;
+      const totalCost = mealCost + otherCost;
+      const balance = deposit - totalCost - deduction;
+
       const balanceClass = balance >= 0 ? 'positive' : '';
       const roleBadge = user.role === 'admin'
         ? '<span class="badge badge-primary" style="margin-left:var(--space-2);">Admin</span>'
@@ -101,11 +129,11 @@ const UsersModule = {
               <div class="user-card-stat-label">Meals</div>
             </div>
             <div class="user-card-stat">
-              <div class="user-card-stat-value">${Utils.currency(user.totalDeposit || 0)}</div>
+              <div class="user-card-stat-value">${Utils.currency(deposit)}</div>
               <div class="user-card-stat-label">Deposit</div>
             </div>
             <div class="user-card-stat">
-              <div class="user-card-stat-value due-amount ${balance >= 0 ? 'positive' : ''}">${Utils.currency(balance)}</div>
+              <div class="user-card-stat-value due-amount ${balanceClass}">${Utils.currency(balance)}</div>
               <div class="user-card-stat-label">Balance</div>
             </div>
           </div>

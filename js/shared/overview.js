@@ -56,12 +56,16 @@ const OverviewModule = {
       // Calculate totals
       let totalDeposit = 0;
       let totalDeductions = 0;
+      let totalOtherCosting = 0;
       let totalBazar = 0;
       let totalMeals = 0;
 
+      this.deposits = deposits; // Store deposits snapshot for renderMemberStats
+
       Object.values(deposits).forEach(d => {
         if (d.type === 'deposit') totalDeposit += Utils.num(d.amount);
-        else totalDeductions += Math.abs(Utils.num(d.amount));
+        else if (d.type === 'deduction') totalDeductions += Math.abs(Utils.num(d.amount));
+        else if (d.type === 'other_costing') totalOtherCosting += Math.abs(Utils.num(d.amount));
       });
 
       Object.values(bazars).forEach(b => {
@@ -109,18 +113,10 @@ const OverviewModule = {
         mealRate = Utils.calcMealRate(totalBazar, totalMeals);
       }
 
-      // Calculate total cost
-      let totalCost = 0;
-      const activeEntries = Object.entries(users).filter(([id, u]) => {
-        if (u.role === 'admin') return !!this.managerMealEnabled;
-        return true;
-      });
-      activeEntries.forEach(([id, u]) => {
-        const uBreakdown = userMealsBreakdown[id] || { breakfast: 0, lunch: 0, dinner: 0 };
-        totalCost += Utils.calcMealCost(mealRate, u.totalMeals || 0, uBreakdown, fixedRates);
-      });
-
-      const netBalance = totalDeposit - totalDeductions - totalBazar;
+      // Meal Cost (previously Total Bazar)
+      const totalMealCost = totalBazar;
+      const totalCost = totalMealCost + totalOtherCosting;
+      const netBalance = totalDeposit - totalCost - totalDeductions;
 
       // Update global state
       DineDesk.state.mealRate = mealRate;
@@ -128,7 +124,7 @@ const OverviewModule = {
       DineDesk.state.totalBazar = totalBazar;
 
       // Render overview stats
-      this.renderStats(totalDeposit, totalMeals, mealRate, totalBazar, netBalance, totalCost);
+      this.renderStats(totalDeposit, totalMeals, mealRate, totalMealCost, totalDeductions, totalOtherCosting, totalCost, netBalance, totalBazar);
 
       const isAdmin = DineDesk.state.role === 'admin';
       const memberStatsSection = document.getElementById('overviewMemberStatsSection');
@@ -162,7 +158,7 @@ const OverviewModule = {
   /**
    * Render overview stat cards
    */
-  renderStats(totalDeposit, totalMeals, mealRate, totalBazar, netBalance, totalCost) {
+  renderStats(totalDeposit, totalMeals, mealRate, totalMealCost, totalDeductions, totalOtherCosting, totalCost, netBalance, totalBazar) {
     const container = document.getElementById('overviewStats');
     if (!container) return;
 
@@ -186,15 +182,6 @@ const OverviewModule = {
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon warning">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label">Total Bazar</div>
-          <div class="stat-value">${Utils.currency(totalBazar)}</div>
-        </div>
-      </div>
-      <div class="stat-card">
         <div class="stat-icon primary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         </div>
@@ -204,7 +191,43 @@ const OverviewModule = {
         </div>
       </div>
       <div class="stat-card">
+        <div class="stat-icon warning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">Total Bazar</div>
+          <div class="stat-value">${Utils.currency(totalBazar !== undefined ? totalBazar : totalMealCost)}</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon warning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M12 11v6m-3-3h6"/></svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">Total Meal Cost</div>
+          <div class="stat-value">${Utils.currency(totalMealCost)}</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--warning-100);color:var(--warning-700);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">Total Other Cost</div>
+          <div class="stat-value">${Utils.currency(totalOtherCosting)}</div>
+        </div>
+      </div>
+      <div class="stat-card">
         <div class="stat-icon danger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">Total Deduction</div>
+          <div class="stat-value">${Utils.currency(totalDeductions)}</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--danger-100);color:var(--danger-700);">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><path d="M16 8H8m8 4H8m4 4H8"/></svg>
         </div>
         <div class="stat-info">
@@ -218,7 +241,7 @@ const OverviewModule = {
         </div>
         <div class="stat-info">
           <div class="stat-label">Net Balance</div>
-          <div class="stat-value" style="color:${netBalance >= 0 ? 'var(--accent-600)' : 'var(--danger-600)'};">${Utils.currency(netBalance)}</div>
+          <div class="stat-value" style="color:${netBalance >= 0 ? 'var(--accent-600)' : 'var(--danger-600)'}">${Utils.currency(netBalance)}</div>
         </div>
       </div>
     `;
@@ -242,10 +265,31 @@ const OverviewModule = {
       return;
     }
 
+    const uDeposits = {};
+    const uOtherCosts = {};
+    const uDeductions = {};
+
+    Object.values(this.deposits || {}).forEach(d => {
+      if (!d.userId) return;
+      const amt = Math.abs(Utils.num(d.amount));
+      if (d.type === 'deposit') {
+        uDeposits[d.userId] = (uDeposits[d.userId] || 0) + amt;
+      } else if (d.type === 'other_costing') {
+        uOtherCosts[d.userId] = (uOtherCosts[d.userId] || 0) + amt;
+      } else if (d.type === 'deduction') {
+        uDeductions[d.userId] = (uDeductions[d.userId] || 0) + amt;
+      }
+    });
+
     tbody.innerHTML = entries.map(([id, u]) => {
       const uBreakdown = this.userMealsBreakdown[id] || { breakfast: 0, lunch: 0, dinner: 0 };
       const mealCost = Utils.calcMealCost(mealRate, u.totalMeals || 0, uBreakdown, fixedRates);
-      const balance = Utils.calcBalance(u.totalDeposit, mealCost);
+
+      const deposit = uDeposits[id] || 0;
+      const otherCost = uOtherCosts[id] || 0;
+      const deduction = uDeductions[id] || 0;
+      const balance = deposit - mealCost - otherCost - deduction;
+
       const status = balance >= 0
         ? '<span class="badge badge-accent">Paid</span>'
         : '<span class="badge badge-danger">Due</span>';
@@ -262,7 +306,7 @@ const OverviewModule = {
             </div>
           </td>
           <td>${u.totalMeals || 0}</td>
-          <td>${Utils.currency(u.totalDeposit)}</td>
+          <td>${Utils.currency(deposit)}</td>
           <td>${Utils.currency(mealCost)}</td>
           <td style="font-weight:var(--weight-bold);color:${balance >= 0 ? 'var(--accent-600)' : 'var(--danger-600)'};">${Utils.currency(balance)}</td>
           <td>${status}</td>

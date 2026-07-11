@@ -17,7 +17,9 @@ const HistoryModule = {
       const deposits = [];
       snap.forEach(child => deposits.push(child.val()));
       deposits.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      this.userDepositsList = deposits;
       this.renderDepositHistory(deposits);
+      if (this.currentUserData) this.renderProfile(this.currentUserData);
     });
 
     // Listen to settings
@@ -94,27 +96,74 @@ const HistoryModule = {
     const rateMode = this.settings?.rateMode || 'market';
     const fixedRates = rateMode === 'fixed' ? (this.settings?.fixedRates || null) : null;
     const mealCost = Utils.calcMealCost(mealRate, user.totalMeals, this.mealsBreakdown, fixedRates);
-    const balance = Utils.calcBalance(user.totalDeposit, mealCost);
+
+    // Calculate dynamic deposits, other costing, deductions from userDepositsList
+    let userDeposit = 0;
+    let userOtherCost = 0;
+    let userDeduction = 0;
+
+    (this.userDepositsList || []).forEach(d => {
+      const amt = Math.abs(Utils.num(d.amount));
+      if (d.type === 'deposit') {
+        userDeposit += amt;
+      } else if (d.type === 'other_costing') {
+        userOtherCost += amt;
+      } else if (d.type === 'deduction') {
+        userDeduction += amt;
+      }
+    });
+
+    const totalCost = mealCost + userOtherCost;
+    const balance = userDeposit - totalCost - userDeduction;
 
     const container = document.getElementById('profileStats');
     if (container) {
+      container.style.display = 'grid';
+      container.style.gridTemplateColumns = 'repeat(auto-fit, minmax(130px, 1fr))';
+      container.style.gap = 'var(--space-3)';
+      container.style.marginBottom = 'var(--space-5)';
+
       container.innerHTML = `
         <div class="stat-card card-compact">
           <div class="stat-info text-center">
             <div class="stat-label">Deposit</div>
-            <div class="stat-value" style="font-size:var(--font-xl);">${Utils.currency(user.totalDeposit)}</div>
+            <div class="stat-value" style="font-size:var(--font-lg);">${Utils.currency(userDeposit)}</div>
           </div>
         </div>
         <div class="stat-card card-compact">
           <div class="stat-info text-center">
-            <div class="stat-label">Total Meals</div>
-            <div class="stat-value" style="font-size:var(--font-xl);">${user.totalMeals || 0}</div>
+            <div class="stat-label">Meals</div>
+            <div class="stat-value" style="font-size:var(--font-lg);">${user.totalMeals || 0}</div>
           </div>
         </div>
         <div class="stat-card card-compact">
           <div class="stat-info text-center">
-            <div class="stat-label">Balance</div>
-            <div class="stat-value" style="font-size:var(--font-xl);color:${balance >= 0 ? 'var(--accent-600)' : 'var(--danger-600)'};">${Utils.currency(balance)}</div>
+            <div class="stat-label">Meal Cost</div>
+            <div class="stat-value" style="font-size:var(--font-lg);">${Utils.currency(mealCost)}</div>
+          </div>
+        </div>
+        <div class="stat-card card-compact">
+          <div class="stat-info text-center">
+            <div class="stat-label">Other Cost</div>
+            <div class="stat-value" style="font-size:var(--font-lg);">${Utils.currency(userOtherCost)}</div>
+          </div>
+        </div>
+        <div class="stat-card card-compact">
+          <div class="stat-info text-center">
+            <div class="stat-label">Deduction</div>
+            <div class="stat-value" style="font-size:var(--font-lg); color:var(--danger-600);">${Utils.currency(userDeduction)}</div>
+          </div>
+        </div>
+        <div class="stat-card card-compact">
+          <div class="stat-info text-center">
+            <div class="stat-label">Total Cost</div>
+            <div class="stat-value" style="font-size:var(--font-lg);">${Utils.currency(totalCost)}</div>
+          </div>
+        </div>
+        <div class="stat-card card-compact" style="grid-column: 1 / -1;">
+          <div class="stat-info text-center">
+            <div class="stat-label" style="font-weight:var(--weight-bold);">Balance</div>
+            <div class="stat-value" style="font-size:var(--font-xl);font-weight:var(--weight-bold);color:${balance >= 0 ? 'var(--accent-600)' : 'var(--danger-600)'};">${Utils.currency(balance)}</div>
           </div>
         </div>
       `;
@@ -208,9 +257,17 @@ const HistoryModule = {
 
     container.innerHTML = deposits.map(d => {
       const isDeposit = d.type === 'deposit';
-      const dotClass = isDeposit ? 'accent' : 'danger';
-      const sign = isDeposit ? '+' : '-';
-      const color = isDeposit ? 'var(--accent-600)' : 'var(--danger-600)';
+      const isOtherCosting = d.type === 'other_costing';
+      const isDeduction = d.type === 'deduction';
+
+      let dotClass, sign, color, typeLabel;
+      if (isDeposit) {
+        dotClass = 'accent'; sign = '+'; color = 'var(--accent-600)'; typeLabel = 'Deposit';
+      } else if (isOtherCosting) {
+        dotClass = 'primary'; sign = '-'; color = 'var(--primary-600)'; typeLabel = 'Other Costing';
+      } else {
+        dotClass = 'danger'; sign = '-'; color = 'var(--danger-600)'; typeLabel = 'Deduction';
+      }
 
       return `
         <div class="timeline-item">
@@ -218,7 +275,10 @@ const HistoryModule = {
           <div class="timeline-content">
             <div class="timeline-date">${Utils.formatDate(d.date)} · ${Utils.timeAgo(d.timestamp)}</div>
             <div class="flex items-center justify-between">
-              <div class="timeline-title">${d.note || d.type}</div>
+              <div>
+                <div class="timeline-title">${d.note || typeLabel}</div>
+                <div style="font-size:var(--font-xs); color:var(--text-tertiary); margin-top:2px;">${typeLabel}</div>
+              </div>
               <div style="font-weight:var(--weight-bold);color:${color};white-space:nowrap;">
                 ${sign}${Utils.currency(Math.abs(d.amount))}
               </div>

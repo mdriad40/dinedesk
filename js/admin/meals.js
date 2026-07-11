@@ -58,6 +58,17 @@ const MealsModule = {
       }
     });
 
+    // Complete Locked Meals Select change listener
+    const select = document.getElementById('completeMealSelect');
+    if (select) {
+      select.addEventListener('change', () => {
+        const btn = document.getElementById('btnCompleteMeal');
+        if (btn) {
+          btn.disabled = !select.value || select.querySelector(`option[value="${select.value}"]`)?.disabled;
+        }
+      });
+    }
+
     // Setup realtime listener for current month's meals
     this._listenMeals();
   },
@@ -74,6 +85,7 @@ const MealsModule = {
       if (Router.currentPage === 'meals') {
         this.renderUserGrid();
         this.renderMealLog();
+        this.updateCompleteMealSelect();
       }
     });
   },
@@ -416,6 +428,7 @@ const MealsModule = {
   loadMeals() {
     this.selectedUsers.clear();
     this._listenMeals();
+    this.updateCompleteMealSelect();
   },
 
   /**
@@ -424,6 +437,129 @@ const MealsModule = {
   refresh() {
     this.renderUserGrid();
     this.renderMealLog();
+    this.updateCompleteMealSelect();
+  },
+
+  /**
+   * Update the Complete Locked Meals select options dynamically
+   */
+  updateCompleteMealSelect() {
+    const select = document.getElementById('completeMealSelect');
+    if (!select) return;
+
+    const s = DineDesk.settings?.getSettings() || {};
+    const isToday = this.currentDate === Utils.today();
+    const autoEnabled = !!s.autoMealEnabled;
+
+    const meals = [
+      { key: 'breakfast', label: 'Breakfast', deadline: s.breakfastDeadline || '04:00' },
+      { key: 'lunch', label: 'Lunch', deadline: s.lunchDeadline || '10:00' },
+      { key: 'dinner', label: 'Dinner', deadline: s.dinnerDeadline || '16:00' }
+    ];
+
+    const day = Utils.dayKey(this.currentDate);
+    const dayData = this.mealsData[day] || {};
+    const completed = dayData.completed || {};
+
+    let hasOptions = false;
+    meals.forEach(m => {
+      const option = select.querySelector(`option[value="${m.key}"]`);
+      if (option) {
+        const isLocked = isToday && autoEnabled && Utils.isPastDeadline(m.deadline);
+        const isAlreadyCompleted = !!completed[m.key];
+
+        if (isAlreadyCompleted) {
+          option.disabled = true;
+          option.textContent = `${m.label} (Completed)`;
+        } else if (isLocked) {
+          option.disabled = false;
+          option.textContent = `${m.label} (Locked)`;
+          hasOptions = true;
+        } else {
+          option.disabled = true;
+          option.textContent = `${m.label} (Open)`;
+        }
+      }
+    });
+
+    const btn = document.getElementById('btnCompleteMeal');
+    if (btn) {
+      const selectedOption = select.querySelector(`option[value="${select.value}"]`);
+      btn.disabled = !select.value || !selectedOption || selectedOption.disabled;
+    }
+  },
+
+  /**
+   * Complete all locked meals for the day using members' current mealStatus
+   */
+  async completeLockedMeal() {
+    const select = document.getElementById('completeMealSelect');
+    if (!select || !select.value) return;
+
+    const mealType = select.value;
+    const btn = document.getElementById('btnCompleteMeal');
+    if (btn) btn.disabled = true;
+
+    try {
+      const month = this.currentDate.substring(0, 7);
+      const day = Utils.dayKey(this.currentDate);
+      const users = DineDesk.users.users;
+      const updates = {};
+
+      const isManagerMealEnabled = !!(DineDesk.settings?.getSettings()?.managerMealEnabled);
+
+      Object.entries(users).forEach(([userId, user]) => {
+        // Skip manager if manager meals are disabled
+        if (user.role === 'admin' && !isManagerMealEnabled) {
+          return;
+        }
+
+        const mealStatus = user.mealStatus || { breakfast: true, lunch: true, dinner: true };
+        const statusVal = mealStatus[mealType];
+
+        let count = 0;
+        if (statusVal === true || statusVal === undefined) {
+          count = 1;
+        } else if (typeof statusVal === 'number' && statusVal > 0) {
+          count = statusVal;
+        }
+
+        if (count > 0) {
+          updates[`dinings/${this.diningId}/meals/${month}/${day}/${mealType}/${userId}`] = count;
+        } else {
+          updates[`dinings/${this.diningId}/meals/${month}/${day}/${mealType}/${userId}`] = null;
+        }
+      });
+
+      // Mark this meal type as completed in the database
+      updates[`dinings/${this.diningId}/meals/${month}/${day}/completed/${mealType}`] = true;
+
+      await db.ref().update(updates);
+
+      // Recalculate totals
+      await this._recalculateTotals();
+
+      Notifications.toast('success', 'Meal Completed', `${mealType.charAt(0).toUpperCase() + mealType.slice(1)} meals have been completed for today.`);
+
+      await Notifications.create(
+        this.diningId,
+        'Meal Logged',
+        `${mealType.charAt(0).toUpperCase() + mealType.slice(1)} meals have been completed by manager for ${Utils.formatDate(this.currentDate)}.`,
+        'all',
+        'meal'
+      );
+      await Notifications.log(this.diningId, 'meal_completed', `Completed ${mealType} meals for ${this.currentDate}`, DineDesk.state.userId);
+
+      // Reset selection and refresh UI
+      select.value = '';
+      this.updateCompleteMealSelect();
+
+    } catch (error) {
+      console.error('Error completing meal:', error);
+      Notifications.toast('error', 'Error', 'Failed to complete locked meal.');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   }
 };
 

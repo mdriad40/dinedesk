@@ -283,7 +283,7 @@
               </div>
               <div class="choice-text">
                 <h3>Create a Mess</h3>
-                <p>Start a new dining group. <br>Become a Manager</p>
+                <p>Start a new dining group & setup. <br>Become a Manager</p>
               </div>
               <div class="choice-chevron">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -306,7 +306,7 @@
               </div>
               <div class="choice-text">
                 <h3>Join a Mess</h3>
-                <p>Enter a valid invitation code.<br>Provided by your manager.</p>
+                <p>Enter a valid invitation code for join.<br>Provided by your manager.</p>
               </div>
               <div class="choice-chevron">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -324,11 +324,13 @@
           <p class="description">Pick a name your members will recognise. You can change it later.</p>
           <div class="form-group mt-4">
             <input type="text" id="onboardMessNameInput" class="form-input"
-              placeholder="e.g. Shubho Mess, Green Villa..." maxlength="40">
-            <span class="char-count">0/40 characters</span>
+              placeholder="e.g. Shubho Mess, Green Villa..." maxlength="40"
+              oninput="document.getElementById('btnSubmitMessName').disabled = !this.value.trim()"
+              onkeydown="if(event.key === 'Enter' && this.value.trim()) { Onboarding.submitName(); }">
           </div>
           <div class="wizard-actions">
-            <button class="btn-onboarding-continue" onclick="Onboarding.submitName()">Continue</button>
+            <button class="btn-onboarding-continue" id="btnSubmitMessName" onclick="Onboarding.submitName()"
+              disabled>Continue</button>
           </div>
         </div>
 
@@ -338,51 +340,69 @@
           <p class="description">Pick the meals your mess counts daily. We'll only ask about these.</p>
 
           <div class="option-cards mt-4">
-            <div class="option-card-row">
+            <div class="option-card-row active" id="mealRowBreakfast">
               <div class="option-card-left">
-                <div class="option-card-icon">☀️</div>
+                <div class="option-card-icon" id="mealIconBreakfast">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="4" />
+                    <path
+                      d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+                  </svg>
+                </div>
                 <div class="option-card-text">
                   <h4>Breakfast</h4>
                   <p>Morning meal</p>
                 </div>
               </div>
               <label class="custom-switch">
-                <input type="checkbox" id="toggleMealsBreakfast" checked>
+                <input type="checkbox" id="toggleMealsBreakfast" checked onchange="Onboarding.validateMeals()">
                 <span class="custom-slider"></span>
               </label>
             </div>
 
-            <div class="option-card-row">
+            <div class="option-card-row active" id="mealRowLunch">
               <div class="option-card-left">
-                <div class="option-card-icon">🍱</div>
+                <div class="option-card-icon" id="mealIconLunch">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M3 12h18M12 2v3M9 3v2M15 3v2M4 12a8 8 0 0 0 16 0" />
+                  </svg>
+                </div>
                 <div class="option-card-text">
                   <h4>Lunch</h4>
                   <p>Mid-day</p>
                 </div>
               </div>
               <label class="custom-switch">
-                <input type="checkbox" id="toggleMealsLunch" checked>
+                <input type="checkbox" id="toggleMealsLunch" checked onchange="Onboarding.validateMeals()">
                 <span class="custom-slider"></span>
               </label>
             </div>
 
-            <div class="option-card-row">
+            <div class="option-card-row active" id="mealRowDinner">
               <div class="option-card-left">
-                <div class="option-card-icon">🌙</div>
+                <div class="option-card-icon" id="mealIconDinner">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                  </svg>
+                </div>
                 <div class="option-card-text">
                   <h4>Dinner</h4>
                   <p>Evening</p>
                 </div>
               </div>
               <label class="custom-switch">
-                <input type="checkbox" id="toggleMealsDinner" checked>
+                <input type="checkbox" id="toggleMealsDinner" checked onchange="Onboarding.validateMeals()">
                 <span class="custom-slider"></span>
               </label>
             </div>
           </div>
 
           <div class="wizard-actions">
-            <button class="btn-onboarding-continue" onclick="Onboarding.submitMeals()">Continue</button>
+            <button class="btn-onboarding-continue" id="btnSubmitMeals"
+              onclick="Onboarding.submitMeals()">Continue</button>
           </div>
         </div>
 
@@ -394,9 +414,24 @@
           <div class="choices-list mt-4">
             <div class="radio-card selected" data-mode="market" onclick="Onboarding.selectRateMode('market')">
               <div class="option-card-left">
-                <div class="option-card-icon">⚡</div>
+                <div class="option-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </div>
                 <div class="option-card-text">
-                  <h4>Market Rate <span class="radio-tag">Most popular</span></h4>
+                  <h4>Market Rate <span class="radio-tag">Most popular</span>
+                    <button type="button" class="btn-info-popup" onclick="Onboarding.showSplitHelp(event, 'market')"
+                      aria-label="Info">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
+                    </button>
+                  </h4>
                   <p>Total bazar &divide; total meals. Fair and dynamic.</p>
                 </div>
               </div>
@@ -405,9 +440,24 @@
 
             <div class="radio-card" data-mode="fixed" onclick="Onboarding.selectRateMode('fixed')">
               <div class="option-card-left">
-                <div class="option-card-icon">🔒</div>
+                <div class="option-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </div>
                 <div class="option-card-text">
                   <h4>Fixed Rate <span class="radio-tag" style="background:#f1f5f9;color:#475569;">Predictable</span>
+                    <button type="button" class="btn-info-popup" onclick="Onboarding.showSplitHelp(event, 'fixed')"
+                      aria-label="Info">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
+                    </button>
                   </h4>
                   <p>A set price per meal.</p>
                 </div>
@@ -419,6 +469,32 @@
           <div class="wizard-actions">
             <button class="btn-onboarding-continue" id="btnSubmitSplitMode"
               onclick="Onboarding.submitSplitMode()">Continue</button>
+          </div>
+
+          <!-- Bottom Sheet / Info Drawer -->
+          <div id="splitHelpDrawer" class="bottom-drawer-overlay">
+            <div class="bottom-drawer">
+              <div class="bottom-drawer-header">
+                <h3 id="splitHelpTitle">Split Mode Info</h3>
+                <button type="button" class="btn-close-drawer" onclick="Onboarding.closeSplitHelp()" aria-label="Close">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              <div class="bottom-drawer-body">
+                <p id="splitHelpDesc"></p>
+                <div class="example-box">
+                  <h5>Example:</h5>
+                  <p id="splitHelpExample"></p>
+                </div>
+              </div>
+              <div class="bottom-drawer-footer">
+                <button type="button" class="btn-drawer-gotit" onclick="Onboarding.closeSplitHelp()">Got it</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -456,30 +532,46 @@
           <p class="description">Configure your own participation in the dining group. Can be changed later.</p>
 
           <div class="option-cards mt-4">
-            <div class="option-card-row">
+            <div class="option-card-row active" id="managerMealRow">
               <div class="option-card-left">
-                <div class="option-card-icon">🍳</div>
+                <div class="option-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+                    <path d="M7 2v20" />
+                    <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
+                  </svg>
+                </div>
                 <div class="option-card-text">
                   <h4>Eat Meals</h4>
                   <p>Enable manager's own daily meals</p>
                 </div>
               </div>
               <label class="custom-switch">
-                <input type="checkbox" id="toggleManagerMealEat" checked>
+                <input type="checkbox" id="toggleManagerMealEat" checked
+                  onchange="Onboarding.validateManagerPreferences()">
                 <span class="custom-slider"></span>
               </label>
             </div>
 
-            <div class="option-card-row">
+            <div class="option-card-row active" id="managerBazarRow">
               <div class="option-card-left">
-                <div class="option-card-icon">🛒</div>
+                <div class="option-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="8" cy="21" r="1" />
+                    <circle cx="19" cy="21" r="1" />
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+                  </svg>
+                </div>
                 <div class="option-card-text">
                   <h4>Do Bazar Duty</h4>
                   <p>Include manager in bazar rotation</p>
                 </div>
               </div>
               <label class="custom-switch">
-                <input type="checkbox" id="toggleManagerBazarDuty" checked>
+                <input type="checkbox" id="toggleManagerBazarDuty" checked
+                  onchange="Onboarding.validateManagerPreferences()">
                 <span class="custom-slider"></span>
               </label>
             </div>
@@ -781,6 +873,7 @@
                   <span id="mealDateDisplay">Loading...</span>
                 </div>
               </div>
+              <div id="mealCompletedWarningContainer" style="display:none; margin-bottom: var(--space-4);"></div>
               <div id="mealTogglesGrid" class="meal-toggles-grid"></div>
             </div>
           </div>
@@ -883,9 +976,33 @@
           </div>
 
           <!-- Date & Meal Type Selector -->
-          <div class="meal-date-selector">
+          <div class="meal-date-selector flex items-center justify-between gap-4 mb-4 flex-wrap">
             <div class="form-group" style="margin-bottom:0;">
               <input type="date" id="mealDateInput" class="form-input" style="width:180px;">
+            </div>
+            <!-- Complete Locked Meals Section -->
+            <div id="completeLockedMealsPanel" class="card"
+              style="margin: 0; padding: var(--space-3) var(--space-4); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color);">
+              <span class="text-sm font-semibold"
+                style="color: var(--text-secondary); display: flex; align-items: center; gap: 4px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Complete Locked Meals:
+              </span>
+              <select id="completeMealSelect" class="form-input"
+                style="width: 150px; height: 36px; padding: 0 var(--space-2); margin: 0; font-size: 14px;">
+                <option value="" disabled selected>Select Meal</option>
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+              </select>
+              <button class="btn btn-primary" style="height: 36px; padding: 0 var(--space-3); font-size: 14px;"
+                onclick="DineDesk.meals.completeLockedMeal()" id="btnCompleteMeal" disabled>
+                Complete
+              </button>
             </div>
           </div>
 
@@ -973,6 +1090,15 @@
               </svg>
               Add Bazar Cost
             </button>
+            <button class="btn" style="background:var(--warning-600);color:#fff;border-color:var(--warning-600);" onclick="DineDesk.finance.showOtherCostingModal()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+              </svg>
+              Other Costing
+            </button>
             <button class="btn btn-danger" onclick="DineDesk.finance.showDeductModal()">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -982,8 +1108,6 @@
             </button>
           </div>
 
-          <!-- Finance Summary Cards -->
-          <div id="financeSummary" class="finance-summary-grid"></div>
 
           <!-- Transaction History -->
           <div class="section-title-bar mt-6">
@@ -1875,138 +1999,201 @@
       </div>
     </div>
   </div>
-
-  <!-- Bazar Modal -->
-  <div id="bazarModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Add Bazar Cost</h3>
-        <button class="modal-close" onclick="closeModal('bazarModal')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="bazarForm">
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Date</label>
-              <input type="date" class="form-input" id="bazarDateInput" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Amount (৳)</label>
-              <input type="number" class="form-input" id="bazarAmountInput" placeholder="Amount" min="1" required>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Items Description</label>
-            <textarea class="form-input" id="bazarItemsInput" placeholder="e.g. Rice, Fish, Oil, Vegetables..."
-              required></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Shopper Name</label>
-            <input type="text" class="form-input" id="bazarShopperInput" placeholder="Who did the shopping?">
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('bazarModal')">Cancel</button>
-        <button class="btn btn-accent" onclick="DineDesk.finance.saveBazar()">Save Bazar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Confirm Dialog -->
-  <div id="confirmDialog" class="modal-overlay confirm-dialog">
-    <div class="modal">
-      <div class="modal-body" style="padding:var(--space-8) var(--space-6);">
-        <div class="confirm-icon danger" id="confirmIcon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
+  <!-- Other Costing Modal -->
+    <div id="otherCostingModal" class="modal-overlay">
+      <div class="modal" style="max-width:500px;">
+        <div class="modal-header">
+          <h3>Add Other Costing</h3>
+          <button class="modal-close" onclick="closeModal('otherCostingModal')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
-        <h3 id="confirmTitle">Are you sure?</h3>
-        <p id="confirmMessage">This action cannot be undone.</p>
-      </div>
-      <div class="modal-footer" style="justify-content:center;">
-        <button class="btn btn-secondary" onclick="closeModal('confirmDialog')">Cancel</button>
-        <button class="btn btn-danger" id="confirmActionBtn" onclick="">Confirm</button>
+        <div class="modal-body">
+          <form id="otherCostingForm">
+            <div class="form-group">
+              <label class="form-label">Total Amount (৳)</label>
+              <input type="number" class="form-input" id="otherCostingAmountInput" placeholder="Enter total amount"
+                min="1" required oninput="DineDesk.finance.updateOtherCostingSplit()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reason / Description</label>
+              <input type="text" class="form-input" id="otherCostingReasonInput"
+                placeholder="e.g. Gas bill, utility, rent" required>
+            </div>
+            <div class="form-group">
+              <div class="members-checklist-header">
+                <label class="form-label" style="margin-bottom:0;">Select Members</label>
+                <label class="checklist-select-all">
+                  <input type="checkbox" id="otherCostingSelectAll"
+                    onchange="DineDesk.finance.toggleSelectAllOtherCosting(this)">
+                  <span>Select All</span>
+                </label>
+              </div>
+              <div id="otherCostingMembersChecklist" class="members-checklist">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+            <!-- Split Info Banner -->
+            <div id="otherCostingSplitInfo" class="other-costing-split-info" style="display:none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span id="otherCostingSplitText">Select members and enter amount to see split</span>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal('otherCostingModal')">Cancel</button>
+          <button class="btn" style="background:var(--warning-600);color:#fff;border-color:var(--warning-600);"
+            onclick="DineDesk.finance.saveOtherCosting()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Apply Costing
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ======== TOAST CONTAINER ======== -->
-  <div id="toastContainer" class="toast-container"></div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <!-- Bazar Modal -->
+    <div id="bazarModal" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Add Bazar Cost</h3>
+          <button class="modal-close" onclick="closeModal('bazarModal')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="bazarForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-input" id="bazarDateInput" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Amount (৳)</label>
+                <input type="number" class="form-input" id="bazarAmountInput" placeholder="Amount" min="1" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Items Description</label>
+              <textarea class="form-input" id="bazarItemsInput" placeholder="e.g. Rice, Fish, Oil, Vegetables..."
+                required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Shopper Name</label>
+              <input type="text" class="form-input" id="bazarShopperInput" placeholder="Who did the shopping?">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal('bazarModal')">Cancel</button>
+          <button class="btn btn-accent" onclick="DineDesk.finance.saveBazar()">Save Bazar</button>
+        </div>
+      </div>
+    </div>
 
-  <!-- App Scripts -->
-  <script src="js/firebase-config.js"></script>
-  <script src="js/shared/utils.js"></script>
-  <script src="js/shared/notifications.js"></script>
-  <script src="js/shared/charts.js"></script>
-  <script src="js/router.js"></script>
-  <script src="js/admin/users.js"></script>
-  <script src="js/admin/meals.js"></script>
-  <script src="js/admin/finance.js"></script>
-  <script src="js/admin/settings.js"></script>
-  <script src="js/user/dashboard.js"></script>
-  <script src="js/user/history.js"></script>
-  <script src="js/user/mealchart.js"></script>
-  <script src="js/user/bazarHistory.js"></script>
-  <script src="js/user/summary.js"></script>
-  <script src="js/shared/overview.js"></script>
-  <script src="js/user/onboarding.js"></script>
-  <script src="js/app.js"></script>
+    <!-- Confirm Dialog -->
+    <div id="confirmDialog" class="modal-overlay confirm-dialog">
+      <div class="modal">
+        <div class="modal-body" style="padding:var(--space-8) var(--space-6);">
+          <div class="confirm-icon danger" id="confirmIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </div>
+          <h3 id="confirmTitle">Are you sure?</h3>
+          <p id="confirmMessage">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer" style="justify-content:center;">
+          <button class="btn btn-secondary" onclick="closeModal('confirmDialog')">Cancel</button>
+          <button class="btn btn-danger" id="confirmActionBtn" onclick="">Confirm</button>
+        </div>
+      </div>
+    </div>
 
-  <script>
-    /* Global modal helpers */
-    function closeModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) modal.classList.remove('active');
-    }
-    function openModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) modal.classList.add('active');
-    }
-    function toggleSidebar() {
-      document.getElementById('sidebar').classList.toggle('open');
-      document.getElementById('sidebarOverlay').classList.toggle('active');
-    }
-    function toggleNotifications(e) {
-      if (e) e.stopPropagation();
-      document.getElementById('notifPanel').classList.toggle('active');
-    }
+    <!-- ======== TOAST CONTAINER ======== -->
+    <div id="toastContainer" class="toast-container"></div>
 
-    // Close sidebar user dropdown
-    document.getElementById('sidebarUserBtn').addEventListener('click', function () {
-      document.getElementById('userDropdown').classList.toggle('active');
-    });
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
-    // Close dropdowns on outside click
-    document.addEventListener('click', function (e) {
-      if (!e.target.closest('#sidebarUserBtn') && !e.target.closest('#userDropdown')) {
-        document.getElementById('userDropdown').classList.remove('active');
+    <!-- App Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/shared/utils.js"></script>
+    <script src="js/shared/notifications.js"></script>
+    <script src="js/shared/charts.js"></script>
+    <script src="js/router.js"></script>
+    <script src="js/admin/users.js"></script>
+    <script src="js/admin/meals.js"></script>
+    <script src="js/admin/finance.js"></script>
+    <script src="js/admin/settings.js"></script>
+    <script src="js/user/dashboard.js"></script>
+    <script src="js/user/history.js"></script>
+    <script src="js/user/mealchart.js"></script>
+    <script src="js/user/bazarHistory.js"></script>
+    <script src="js/user/summary.js"></script>
+    <script src="js/shared/overview.js"></script>
+    <script src="js/user/onboarding.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+      /* Global modal helpers */
+      function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.remove('active');
       }
-      if (!e.target.closest('#notifDropdown')) {
-        document.getElementById('notifPanel').classList.remove('active');
+      function openModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.add('active');
       }
-      if (!e.target.closest('.custom-dropdown')) {
-        document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
-          dropdown.classList.remove('active');
-        });
+      function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
       }
-    });
-  </script>
+      function toggleNotifications(e) {
+        if (e) e.stopPropagation();
+        document.getElementById('notifPanel').classList.toggle('active');
+      }
+
+      // Close sidebar user dropdown
+      document.getElementById('sidebarUserBtn').addEventListener('click', function () {
+        document.getElementById('userDropdown').classList.toggle('active');
+      });
+
+      // Close dropdowns on outside click
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('#sidebarUserBtn') && !e.target.closest('#userDropdown')) {
+          document.getElementById('userDropdown').classList.remove('active');
+        }
+        if (!e.target.closest('#notifDropdown')) {
+          document.getElementById('notifPanel').classList.remove('active');
+        }
+        if (!e.target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+            dropdown.classList.remove('active');
+          });
+        }
+      });
+    </script>
 </body>
 
 </html>

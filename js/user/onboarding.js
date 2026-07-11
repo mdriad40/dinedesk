@@ -17,6 +17,12 @@ const Onboarding = {
   managerBazarEnabled: true,
   messCode: '',
 
+  mealIcons: {
+    breakfast: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>`,
+    lunch: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M3 12h18M12 2v3M9 3v2M15 3v2M4 12a8 8 0 0 0 16 0" /></svg>`,
+    dinner: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>`
+  },
+
   // Join Mess State
   inviteCodeInput: '',
   matchedDining: null,
@@ -232,51 +238,69 @@ const Onboarding = {
       return;
     }
 
-    // Path 'create' Step mapping:
-    // Step 1: Name
-    // Step 2: Meals
-    // Step 3: Split Mode
-    // Step 4: Fixed Rates OR Cutoffs
-    // Step 5: Bazar (Manager Options)
-    // Step 6: Invite Code (Finish)
+    // Define wizard steps dynamically based on configuration
+    const steps = [
+      null, // 1-based indexing for convenience
+      {
+        title: 'Name',
+        element: stepName,
+        setup: () => {
+          const input = document.getElementById('onboardMessNameInput');
+          const btn = document.getElementById('btnSubmitMessName');
+          if (input && btn) {
+            btn.disabled = !input.value.trim();
+          }
+        }
+      },
+      {
+        title: 'Meals',
+        element: stepMeals,
+        setup: () => this.validateMeals()
+      },
+      {
+        title: 'Split',
+        element: stepSplit
+      }
+    ];
 
-    const totalSteps = 6;
+    if (this.rateMode === 'fixed') {
+      steps.push({
+        title: 'Rates',
+        element: stepRates,
+        setup: () => this.populateRatesForm()
+      });
+    }
+
+    // Both modes now configure cutoff/deadlines
+    steps.push({
+      title: 'Cutoffs',
+      element: stepCutoffs,
+      setup: () => this.populateCutoffsForm()
+    });
+
+    steps.push({
+      title: 'Bazar',
+      element: stepBazar,
+      setup: () => this.validateManagerPreferences()
+    });
+
+    steps.push({
+      title: 'Invites',
+      element: stepInvite,
+      setup: () => this.generateInviteCode()
+    });
+
+    const totalSteps = steps.length - 1;
     let stepTitle = '';
     let targetEl = null;
 
-    switch (step) {
-      case 1:
-        stepTitle = 'Name';
-        targetEl = stepName;
-        break;
-      case 2:
-        stepTitle = 'Meals';
-        targetEl = stepMeals;
-        break;
-      case 3:
-        stepTitle = 'Split';
-        targetEl = stepSplit;
-        break;
-      case 4:
-        if (this.rateMode === 'fixed') {
-          stepTitle = 'Rates';
-          targetEl = stepRates;
-          this.populateRatesForm();
-        } else {
-          stepTitle = 'Cutoffs';
-          targetEl = stepCutoffs;
-          this.populateCutoffsForm();
-        }
-        break;
-      case 5:
-        stepTitle = 'Bazar';
-        targetEl = stepBazar;
-        break;
-      case 6:
-        stepTitle = 'Invites';
-        targetEl = stepInvite;
-        this.generateInviteCode();
-        break;
+    if (step >= 1 && step <= totalSteps) {
+      const currentStepConfig = steps[step];
+      stepTitle = currentStepConfig.title;
+      targetEl = currentStepConfig.element;
+      if (currentStepConfig.setup) {
+        currentStepConfig.setup();
+      }
     }
 
     if (targetEl) targetEl.style.display = 'flex';
@@ -339,7 +363,37 @@ const Onboarding = {
       return;
     }
     this.messName = name;
-    this.showStep(2);
+    this.showStep(this.currentStep + 1);
+  },
+
+  /**
+   * Validates meal selection on Step 2 (requires at least one meal checked)
+   */
+  validateMeals() {
+    const b = document.getElementById('toggleMealsBreakfast');
+    const l = document.getElementById('toggleMealsLunch');
+    const d = document.getElementById('toggleMealsDinner');
+    const btn = document.getElementById('btnSubmitMeals');
+
+    if (b && l && d && btn) {
+      btn.disabled = (!b.checked && !l.checked && !d.checked);
+
+      // Update styling on the icon containers
+      this.updateMealIconState('Breakfast', b.checked);
+      this.updateMealIconState('Lunch', l.checked);
+      this.updateMealIconState('Dinner', d.checked);
+    }
+  },
+
+  updateMealIconState(mealName, isChecked) {
+    const rowContainer = document.getElementById(`mealRow${mealName}`);
+    if (rowContainer) {
+      if (isChecked) {
+        rowContainer.classList.add('active');
+      } else {
+        rowContainer.classList.remove('active');
+      }
+    }
   },
 
   /**
@@ -356,7 +410,32 @@ const Onboarding = {
     }
 
     this.trackedMeals = { breakfast: b, lunch: l, dinner: d };
-    this.showStep(3);
+    this.showStep(this.currentStep + 1);
+  },
+
+  showSplitHelp(event, mode) {
+    if (event) event.stopPropagation(); // prevent card selection trigger
+    const drawer = document.getElementById('splitHelpDrawer');
+    const title = document.getElementById('splitHelpTitle');
+    const desc = document.getElementById('splitHelpDesc');
+    const example = document.getElementById('splitHelpExample');
+
+    if (mode === 'market') {
+      title.innerText = 'Market Rate Mode';
+      desc.innerText = 'Total bazar cost is divided by the total number of meals eaten. Fair and dynamic calculation.';
+      example.innerText = '৳5,000 bazar ÷ 250 meals = ৳20/meal. If you eat 60 meals, you pay: 60 × ৳20 = ৳1,200.';
+    } else {
+      title.innerText = 'Fixed Rate Mode';
+      desc.innerText = 'Meals have a set price configured by the manager. Predictable pricing per meal.';
+      example.innerText = 'Lunch is set to ৳60. If you eat 20 lunches, you pay: 20 × ৳60 = ৳1,200.';
+    }
+
+    if (drawer) drawer.classList.add('active');
+  },
+
+  closeSplitHelp() {
+    const drawer = document.getElementById('splitHelpDrawer');
+    if (drawer) drawer.classList.remove('active');
   },
 
   /**
@@ -371,10 +450,13 @@ const Onboarding = {
 
     // Enable/disable next continue button
     document.getElementById('btnSubmitSplitMode').disabled = false;
+
+    // Refresh step wizard details (updates Step 3 of X header and progress bar segments immediately)
+    this.showStep(this.currentStep);
   },
 
   submitSplitMode() {
-    this.showStep(4);
+    this.showStep(this.currentStep + 1);
   },
 
   /**
@@ -386,15 +468,15 @@ const Onboarding = {
 
     container.innerHTML = '';
     const meals = [
-      { key: 'breakfast', label: 'Breakfast', icon: '☀️', val: this.fixedRates.breakfast },
-      { key: 'lunch', label: 'Lunch', icon: '🍱', val: this.fixedRates.lunch },
-      { key: 'dinner', label: 'Dinner', icon: '🌙', val: this.fixedRates.dinner }
+      { key: 'breakfast', label: 'Breakfast', icon: this.mealIcons.breakfast, val: this.fixedRates.breakfast },
+      { key: 'lunch', label: 'Lunch', icon: this.mealIcons.lunch, val: this.fixedRates.lunch },
+      { key: 'dinner', label: 'Dinner', icon: this.mealIcons.dinner, val: this.fixedRates.dinner }
     ];
 
     meals.forEach(m => {
       if (this.trackedMeals[m.key]) {
         container.innerHTML += `
-          <div class="option-card-row">
+          <div class="option-card-row active">
             <div class="option-card-left">
               <div class="option-card-icon">${m.icon}</div>
               <div class="option-card-text">
@@ -420,7 +502,7 @@ const Onboarding = {
         this.fixedRates[k] = parseFloat(el.value) || 0;
       }
     });
-    this.showStep(5);
+    this.showStep(this.currentStep + 1);
   },
 
   /**
@@ -432,15 +514,15 @@ const Onboarding = {
 
     container.innerHTML = '';
     const meals = [
-      { key: 'breakfast', label: 'Breakfast cutoff', icon: '☀️', val: this.cutoffs.breakfast },
-      { key: 'lunch', label: 'Lunch cutoff', icon: '🍱', val: this.cutoffs.lunch },
-      { key: 'dinner', label: 'Dinner cutoff', icon: '🌙', val: this.cutoffs.dinner }
+      { key: 'breakfast', label: 'Breakfast cutoff', icon: this.mealIcons.breakfast, val: this.cutoffs.breakfast },
+      { key: 'lunch', label: 'Lunch cutoff', icon: this.mealIcons.lunch, val: this.cutoffs.lunch },
+      { key: 'dinner', label: 'Dinner cutoff', icon: this.mealIcons.dinner, val: this.cutoffs.dinner }
     ];
 
     meals.forEach(m => {
       if (this.trackedMeals[m.key]) {
         container.innerHTML += `
-          <div class="option-card-row">
+          <div class="option-card-row active">
             <div class="option-card-left">
               <div class="option-card-icon">${m.icon}</div>
               <div class="option-card-text">
@@ -463,7 +545,21 @@ const Onboarding = {
         this.cutoffs[k] = el.value || '00:00';
       }
     });
-    this.showStep(5);
+    this.showStep(this.currentStep + 1);
+  },
+
+  validateManagerPreferences() {
+    const mealCheck = document.getElementById('toggleManagerMealEat');
+    const bazarCheck = document.getElementById('toggleManagerBazarDuty');
+    const mealRow = document.getElementById('managerMealRow');
+    const bazarRow = document.getElementById('managerBazarRow');
+
+    if (mealCheck && mealRow) {
+      mealRow.classList.toggle('active', mealCheck.checked);
+    }
+    if (bazarCheck && bazarRow) {
+      bazarRow.classList.toggle('active', bazarCheck.checked);
+    }
   },
 
   /**
@@ -472,7 +568,7 @@ const Onboarding = {
   submitManagerOptions() {
     this.managerMealEnabled = document.getElementById('toggleManagerMealEat').checked;
     this.managerBazarEnabled = document.getElementById('toggleManagerBazarDuty').checked;
-    this.showStep(6);
+    this.showStep(this.currentStep + 1);
   },
 
   /**
@@ -528,7 +624,7 @@ const Onboarding = {
 
       // 2. Build Settings structure
       const diningSettings = {
-        autoMealEnabled: this.rateMode === 'market', // Enable lock deadlines for market rates
+        autoMealEnabled: true, // Enable lock deadlines since they are configured in the onboarding flow
         breakfastDeadline: this.cutoffs.breakfast || '07:00',
         lunchDeadline: this.cutoffs.lunch || '08:00',
         dinnerDeadline: this.cutoffs.dinner || '16:00',

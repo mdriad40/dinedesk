@@ -8,6 +8,7 @@ const UserDashboard = {
   countdownInterval: null,
   monthlyDeposit: 0,
   monthlyMeals: 0,
+  monthlyBazar: 0,
 
   /**
    * Initialize user dashboard
@@ -48,21 +49,46 @@ const UserDashboard = {
     db.ref(`dinings/${diningId}/deposits`)
       .orderByChild('userId').equalTo(userId)
       .on('value', (snap) => {
-        let total = 0;
+        let depositTotal = 0;
+        let otherCostTotal = 0;
+        let deductionTotal = 0;
         snap.forEach(child => {
           const d = child.val();
-          if (d.date && d.date.startsWith(currentMonth) && d.type === 'deposit') {
-            total += Utils.num(d.amount);
+          if (d.date && d.date.startsWith(currentMonth)) {
+            const amt = Math.abs(Utils.num(d.amount));
+            if (d.type === 'deposit') {
+              depositTotal += amt;
+            } else if (d.type === 'other_costing') {
+              otherCostTotal += amt;
+            } else if (d.type === 'deduction') {
+              deductionTotal += amt;
+            }
           }
         });
-        this.monthlyDeposit = total;
+        this.monthlyDeposit = depositTotal;
+        this.monthlyOtherCosting = otherCostTotal;
+        this.monthlyDeduction = deductionTotal;
         this.renderStats();
       });
+
+    // Bazar this month (total bazar spend)
+    db.ref(`dinings/${diningId}/bazar`).on('value', (snap) => {
+      let bazarTotal = 0;
+      snap.forEach(child => {
+        const b = child.val();
+        if (b.date && b.date.startsWith(currentMonth)) {
+          bazarTotal += Utils.num(b.amount);
+        }
+      });
+      this.monthlyBazar = bazarTotal;
+      this.renderStats();
+    });
 
     // Meals this month for this user
     db.ref(`dinings/${diningId}/meals/${currentMonth}`)
       .on('value', (snap) => {
         const monthData = snap.val() || {};
+        this.monthMealsData = monthData;
         let total = 0;
         let breakdown = { breakfast: 0, lunch: 0, dinner: 0 };
         Object.values(monthData).forEach(dayData => {
@@ -79,6 +105,7 @@ const UserDashboard = {
         this.monthlyMeals = total;
         this.monthlyMealsBreakdown = breakdown;
         this.renderStats();
+        this.renderMealToggles();
       });
   },
 
@@ -95,8 +122,11 @@ const UserDashboard = {
     const rateMode = this.settings.rateMode || 'market';
     const fixedRates = rateMode === 'fixed' ? (this.settings.fixedRates || null) : null;
     const mealCost = Utils.calcMealCost(mealRate, this.monthlyMeals, this.monthlyMealsBreakdown, fixedRates);
-    const balance = Utils.calcBalance(this.monthlyDeposit, mealCost);
-    const due = balance < 0 ? Math.abs(balance) : 0;
+    
+    const otherCosting = this.monthlyOtherCosting || 0;
+    const deduction = this.monthlyDeduction || 0;
+    const totalCost = mealCost + otherCosting;
+    const balance = this.monthlyDeposit - totalCost - deduction;
 
     container.innerHTML = `
       <div class="stat-card fade-up stagger-1">
@@ -117,22 +147,40 @@ const UserDashboard = {
           <div class="stat-value">${this.monthlyMeals || 0}</div>
         </div>
       </div>
-      <div class="stat-card fade-up stagger-3">
+      <div class="stat-card fade-up" style="animation-delay: 0.15s;">
         <div class="stat-icon warning">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
         <div class="stat-info">
-          <div class="stat-label">This Month Meal Cost</div>
+          <div class="stat-label">Total Meal Cost</div>
           <div class="stat-value">${Utils.currency(mealCost)}</div>
         </div>
       </div>
-      <div class="stat-card fade-up stagger-4">
+      <div class="stat-card fade-up" style="animation-delay: 0.2s;">
+        <div class="stat-icon" style="background:var(--warning-100);color:var(--warning-700);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">Total Other Cost</div>
+          <div class="stat-value">${Utils.currency(otherCosting)}</div>
+        </div>
+      </div>
+      <div class="stat-card fade-up" style="animation-delay: 0.25s;">
+        <div class="stat-icon danger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">Deduction</div>
+          <div class="stat-value">${Utils.currency(deduction)}</div>
+        </div>
+      </div>
+      <div class="stat-card fade-up" style="animation-delay: 0.3s;">
         <div class="stat-icon ${balance >= 0 ? 'accent' : 'danger'}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
         </div>
         <div class="stat-info">
           <div class="stat-label">This Month Balance</div>
-          <div class="stat-value" style="color:${balance >= 0 ? 'var(--accent-600)' : 'var(--danger-600)'};">${Utils.currency(balance)}</div>
+          <div class="stat-value" style="color:${balance >= 0 ? 'var(--accent-600)' : 'var(--danger-600)'}">${Utils.currency(balance)}</div>
         </div>
       </div>
     `;
@@ -143,97 +191,219 @@ const UserDashboard = {
    */
   renderMealToggles() {
     const grid = document.getElementById('mealTogglesGrid');
-    if (!grid || !this.userData) return;    const u = this.userData;
+    if (!grid || !this.userData) return;
+    const u = this.userData;
     const mealStatus = u.mealStatus || { breakfast: true, lunch: true, dinner: true };
     const s = this.settings;
     const autoEnabled = !!s.autoMealEnabled;
     const trackedMeals = s.trackedMeals || { breakfast: true, lunch: true, dinner: true };
 
+    const todayKey = Utils.dayKey(Utils.today());
+    const todayMeals = (this.monthMealsData && this.monthMealsData[todayKey]) || {};
+    const completed = todayMeals.completed || {};
+
     const meals = [
       {
         type: 'breakfast',
         label: 'Breakfast',
-        icon: '☀️',
+        desc: 'Morning meal',
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                 <path d="M18 8h1a3 3 0 0 1 0 6h-1" />
+                 <path d="M4 8h14v7a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8z" fill="currentColor" />
+                 <line x1="2" y1="21" x2="20" y2="21" stroke-width="2" />
+               </svg>`,
         iconClass: 'breakfast',
-        deadline: s.breakfastDeadline || '04:00',
-        status: mealStatus.breakfast !== false
+        deadline: s.breakfastDeadline || '04:00'
       },
       {
         type: 'lunch',
         label: 'Lunch',
-        icon: '🍱',
+        desc: 'Mid-day',
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                 <path d="M18 3v18M18 3a3 3 0 0 0-3 3v6h3M6 3v8a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V3M8 13v9" />
+                 <line x1="6" y1="3" x2="6" y2="7" />
+                 <line x1="10" y1="3" x2="10" y2="7" />
+               </svg>`,
         iconClass: 'lunch',
-        deadline: s.lunchDeadline || '10:00',
-        status: mealStatus.lunch !== false
+        deadline: s.lunchDeadline || '10:00'
       },
       {
         type: 'dinner',
         label: 'Dinner',
-        icon: '🌙',
+        desc: 'Evening',
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                 <g transform="translate(12,12) rotate(45) translate(-12,-12)">
+                   <path d="M12 21v-10" />
+                   <path d="M12 11c-1.8 0-2.2-1.5-2.2-4s1-4 2.2-4 2.2 1.5 2.2 4-1 4-2.2 4z" fill="currentColor" />
+                 </g>
+                 <g transform="translate(12,12) rotate(-45) translate(-12,-12)">
+                   <path d="M12 21v-10" />
+                   <path d="M12 11c1.5 0 2-1 2-4s-.5-4-2-4v8z" fill="currentColor" />
+                 </g>
+               </svg>`,
         iconClass: 'dinner',
-        deadline: s.dinnerDeadline || '16:00',
-        status: mealStatus.dinner !== false
+        deadline: s.dinnerDeadline || '16:00'
       }
     ].filter(m => trackedMeals[m.type] !== false);
 
     // Update date display
     Utils.setText('mealDateDisplay', Utils.formatDate(Utils.today()));
 
+    // Show/hide completed meals warning card
+    const completedList = meals.filter(m => !!completed[m.type]);
+    const warningContainer = document.getElementById('mealCompletedWarningContainer');
+    if (warningContainer) {
+      if (completedList.length > 0) {
+        const todayStr = Utils.today();
+        const formattedToday = Utils.formatDate(todayStr);
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        const formattedTomorrow = Utils.formatDate(tomorrowStr);
+
+        warningContainer.innerHTML = `
+          <div class="completed-meals-warning-card" style="
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            color: #991b1b;
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.45;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.03);
+          ">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; color:#b91c1c;">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="rgba(185, 28, 28, 0.08)"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <div>
+              Today's (<strong>${formattedToday}</strong>) meal has already been added. You may turn the next meal on or off from <strong>${formattedTomorrow}</strong>.
+            </div>
+          </div>
+        `;
+        warningContainer.style.display = 'block';
+      } else {
+        warningContainer.style.display = 'none';
+      }
+    }
+
     grid.innerHTML = meals.map(meal => {
-      const isPast = autoEnabled && Utils.isPastDeadline(meal.deadline);
-      const isLocked = isPast;
-      const isOn = meal.status;
-      const cardClass = isLocked ? 'locked' : (isOn ? 'on' : 'off');
-      const timeRemaining = Utils.timeUntilDeadline(meal.deadline);
+      const isCompleted = !!completed[meal.type];
+      const isLocked = !isCompleted && autoEnabled && Utils.isPastDeadline(meal.deadline);
+
+      const val = mealStatus[meal.type];
+      let mealCount = 1;
+      if (val === false) {
+        mealCount = 0;
+      } else if (typeof val === 'number') {
+        mealCount = val;
+      }
+
+      const isOn = mealCount > 0;
+      const cardClass = (isLocked ? 'locked ' : '') + (isOn ? 'on' : 'off');
 
       let statusText = '';
-      if (isLocked) {
+      if (isCompleted) {
+        statusText = `
+          <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px; color: var(--primary-600);">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z" />
+          </svg>
+          Meal is ${isOn ? 'ON' : 'OFF'} · Cutoff: ${Utils.formatTime(meal.deadline)}
+        `;
+      } else if (isLocked) {
         statusText = `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Locked · Deadline was ${Utils.formatTime(meal.deadline)}`;
-      } else if (autoEnabled) {
-        statusText = `⏰ Editable · ${Utils.countdownDisplay(timeRemaining.hours, timeRemaining.minutes)}`;
       } else {
-        statusText = isOn ? '✅ Meal is ON' : '❌ Meal is OFF';
+        // Unlocked meal (both autoEnabled and manual)
+        statusText = `
+          <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px; color: ${isOn ? 'var(--primary-600)' : 'var(--danger-600)'};">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          Meal is ${isOn ? 'ON' : 'OFF'} · Cutoff: ${Utils.formatTime(meal.deadline)}
+        `;
       }
 
       return `
         <div class="meal-toggle-card ${cardClass}">
           <div class="meal-toggle-info">
             <div class="meal-toggle-icon ${meal.iconClass}">
-              <span style="font-size:22px;">${meal.icon}</span>
+              ${meal.icon}
             </div>
             <div class="meal-toggle-text">
-              <h4>${meal.label}</h4>
+              <h4 style="margin:0; line-height:1.2;">${meal.label}</h4>
+              <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 1px; margin-bottom: 2px;">${meal.desc}</div>
               <div class="meal-toggle-status">${statusText}</div>
             </div>
           </div>
-          <label class="toggle-switch">
-            <input type="checkbox"
-                   ${isOn ? 'checked' : ''}
-                   ${isLocked ? 'disabled' : ''}
-                   onchange="DineDesk.userDashboard.toggleMeal('${meal.type}', this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
+          <div class="quantity-selector ${isLocked ? 'disabled' : ''}">
+            <button class="qty-btn qty-minus" type="button" 
+                    ${isLocked || mealCount <= 0 ? 'disabled' : ''} 
+                    onclick="DineDesk.userDashboard.adjustMealCount('${meal.type}', -1)">-</button>
+            <span class="qty-val">${mealCount}</span>
+            <button class="qty-btn qty-plus" type="button" 
+                    ${isLocked || mealCount >= 10 ? 'disabled' : ''} 
+                    onclick="DineDesk.userDashboard.adjustMealCount('${meal.type}', 1)">+</button>
+          </div>
         </div>
       `;
     }).join('');
   },
 
   /**
-   * Toggle a meal ON/OFF
+   * Adjust meal count (plus/minus)
    */
-  async toggleMeal(mealType, isOn) {
+  async adjustMealCount(mealType, delta) {
     try {
-      await db.ref(`dinings/${this.diningId}/users/${this.userId}/mealStatus/${mealType}`).set(isOn);
+      const u = this.userData;
+      const mealStatus = u.mealStatus || { breakfast: true, lunch: true, dinner: true };
+      const currentVal = mealStatus[mealType];
+
+      let currentCount = 1;
+      if (currentVal === false) {
+        currentCount = 0;
+      } else if (typeof currentVal === 'number') {
+        currentCount = currentVal;
+      }
+
+      const newCount = Math.min(10, Math.max(0, currentCount + delta));
+      if (newCount === currentCount) return;
+
+      // Update database
+      await db.ref(`dinings/${this.diningId}/users/${this.userId}/mealStatus/${mealType}`).set(newCount);
 
       const label = mealType.charAt(0).toUpperCase() + mealType.slice(1);
-      Notifications.toast(
-        isOn ? 'success' : 'error',
-        `${label} ${isOn ? 'ON' : 'OFF'}`,
-        `Your ${label.toLowerCase()} has been turned ${isOn ? 'on' : 'off'}.`
-      );
-      await Notifications.log(this.diningId, 'meal_toggled', `${label} ${isOn ? 'ON' : 'OFF'}`, this.userId, this.userId);
+
+      let toastType = 'success';
+      let toastTitle = '';
+      let toastDesc = '';
+      let logMsg = '';
+
+      if (newCount === 0) {
+        toastType = 'error';
+        toastTitle = `${label} OFF`;
+        toastDesc = `Your ${label.toLowerCase()} has been turned off.`;
+        logMsg = `${label} OFF`;
+      } else if (newCount === 1 && currentCount === 0) {
+        toastTitle = `${label} ON`;
+        toastDesc = `Your ${label.toLowerCase()} has been turned on.`;
+        logMsg = `${label} ON`;
+      } else {
+        toastTitle = `${label} Updated`;
+        toastDesc = `Your ${label.toLowerCase()} count has been set to ${newCount}.`;
+        logMsg = `${label} count updated to ${newCount}`;
+      }
+
+      Notifications.toast(toastType, toastTitle, toastDesc);
+      await Notifications.log(this.diningId, 'meal_toggled', logMsg, this.userId, this.userId);
     } catch (error) {
-      console.error('Toggle meal error:', error);
+      console.error('Adjust meal count error:', error);
       Notifications.toast('error', 'Error', 'Failed to update meal status.');
     }
   },
@@ -263,6 +433,16 @@ const UserDashboard = {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         </div>
         <span>Add Deposit</span>
+      </div>
+      <div class="quick-action-card" onclick="DineDesk.finance.showOtherCostingModal()">
+        <div class="quick-action-icon" style="background:var(--warning-100);color:var(--warning-700);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+        </div>
+        <span>Other Costing</span>
       </div>
       <div class="quick-action-card" onclick="DineDesk.finance.showBazarModal()">
         <div class="quick-action-icon" style="background:var(--danger-100);color:var(--danger-600);">
@@ -392,14 +572,16 @@ const UserDashboard = {
       const renderCombined = () => {
         const combined = [];
 
-        // Format user logs
+        // Format user logs (only user-specific activities, filtering out duplicates and external join/add events)
         userLogsData.forEach(l => {
-          combined.push({
-            action: l.action,
-            details: l.details,
-            timestamp: l.timestamp,
-            performedBy: l.performedBy
-          });
+          if (l.action === 'user_updated' || l.action === 'security_updated' || l.action === 'meal_toggled') {
+            combined.push({
+              action: l.action,
+              details: l.details,
+              timestamp: l.timestamp,
+              performedBy: l.performedBy
+            });
+          }
         });
 
         // Format user deposits/deductions
@@ -438,7 +620,7 @@ const UserDashboard = {
             </div>
           `;
         } else {
-          container.innerHTML = displayLogs.map(log => {
+          let html = displayLogs.map(log => {
             const dotClass = log.action?.includes('deposit') ? 'accent'
               : log.action?.includes('deduction') ? 'danger'
                 : log.action?.includes('meal') ? 'warning'
@@ -464,6 +646,9 @@ const UserDashboard = {
               </div>
             `;
           }).join('');
+
+          html += this._setupTimelineCollapse(container, displayLogs.length);
+          container.innerHTML = html;
         }
 
         // ---- Render Meal Toggle History (separate beautiful section) ----
@@ -486,9 +671,16 @@ const UserDashboard = {
               </div>
             `;
           } else {
-            toggleContainer.innerHTML = toggleLogs.map(log => {
+            let html = toggleLogs.map(log => {
               const detail = this._normalizeMealDetail(log.details || '');
-              const isOn = detail.toUpperCase().includes(' ON') || (log.details || '').toUpperCase().includes(' ON');
+              const isOn = !(
+                detail.toUpperCase().includes(' OFF') ||
+                detail.toUpperCase().includes(' REMOVED') ||
+                detail.toUpperCase().includes(' TO 0') ||
+                (log.details || '').toUpperCase().includes(' OFF') ||
+                (log.details || '').toUpperCase().includes(' REMOVED') ||
+                (log.details || '').toUpperCase().includes(' TO 0')
+              );
               const mealType = this._extractMealType(detail || log.details || '') || 'Meal';
 
               // Format full date + time
@@ -522,6 +714,9 @@ const UserDashboard = {
                 </div>
               `;
             }).join('');
+
+            html += this._setupToggleHistoryCollapse(toggleContainer, toggleLogs.length);
+            toggleContainer.innerHTML = html;
           }
         }
       };
@@ -570,7 +765,7 @@ const UserDashboard = {
           return;
         }
 
-        container.innerHTML = displayLogs.map(log => {
+        let html = displayLogs.map(log => {
           const dotClass = log.action?.includes('deposit') ? 'accent'
             : log.action?.includes('deduction') ? 'danger'
               : log.action?.includes('meal') ? 'warning'
@@ -604,8 +799,114 @@ const UserDashboard = {
             </div>
           `;
         }).join('');
+
+        html += this._setupTimelineCollapse(container, displayLogs.length);
+        container.innerHTML = html;
       });
     }
+  },
+
+  /**
+   * Setup collapse and expand behavior for the Recent Activity timeline
+   */
+  _setupTimelineCollapse(container, displayLogsCount) {
+    if (displayLogsCount <= 3) {
+      container.classList.remove('collapsed');
+      return '';
+    }
+
+    // Determine if it was already expanded or collapsed
+    const isFirstRender = !container.querySelector('.timeline-item');
+    const isCollapsed = isFirstRender ? true : container.classList.contains('collapsed');
+
+    if (isCollapsed) {
+      container.classList.add('collapsed');
+    } else {
+      container.classList.remove('collapsed');
+    }
+
+    // Add listener if not attached
+    if (!container.dataset.listenerAttached) {
+      container.addEventListener('click', (e) => {
+        const expandBtn = e.target.closest('.expand-btn');
+        const collapseBtn = e.target.closest('.collapse-btn');
+        if (expandBtn) {
+          container.classList.remove('collapsed');
+        } else if (collapseBtn) {
+          container.classList.add('collapsed');
+          // Smooth scroll to top of the card when collapsing if user scrolled past
+          const card = container.closest('.card');
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      });
+      container.dataset.listenerAttached = 'true';
+    }
+
+    return `
+      <div class="timeline-expand-wrapper">
+        <button class="timeline-action-btn expand-btn" type="button" title="Show More">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+      </div>
+      <div class="timeline-collapse-wrapper">
+        <button class="timeline-action-btn collapse-btn" type="button" title="Show Less">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        </button>
+      </div>
+    `;
+  },
+
+  /**
+   * Setup collapse and expand behavior for the Meal Toggle History list
+   */
+  _setupToggleHistoryCollapse(container, logsCount) {
+    if (logsCount <= 4) {
+      container.classList.remove('collapsed');
+      return '';
+    }
+
+    // Determine if it was already expanded or collapsed
+    const isFirstRender = !container.querySelector('.meal-toggle-history-item');
+    const isCollapsed = isFirstRender ? true : container.classList.contains('collapsed');
+
+    if (isCollapsed) {
+      container.classList.add('collapsed');
+    } else {
+      container.classList.remove('collapsed');
+    }
+
+    // Add listener if not attached
+    if (!container.dataset.listenerAttached) {
+      container.addEventListener('click', (e) => {
+        const expandBtn = e.target.closest('.expand-btn');
+        const collapseBtn = e.target.closest('.collapse-btn');
+        if (expandBtn) {
+          container.classList.remove('collapsed');
+        } else if (collapseBtn) {
+          container.classList.add('collapsed');
+          const card = container.closest('.card');
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      });
+      container.dataset.listenerAttached = 'true';
+    }
+
+    return `
+      <div class="timeline-expand-wrapper">
+        <button class="timeline-action-btn expand-btn" type="button" title="Show More">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+      </div>
+      <div class="timeline-collapse-wrapper">
+        <button class="timeline-action-btn collapse-btn" type="button" title="Show Less">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        </button>
+      </div>
+    `;
   },
 
   /**
