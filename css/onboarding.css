@@ -1039,15 +1039,16 @@
   }
 
   .onboarding-right.step-welcome-active {
-    padding: 2rem 12px;
+    padding: 90px 12px 2rem 12px !important;
     background-color: #f8fafc;
+    align-items: flex-start !important;
   }
 
   .onboarding-right.step-welcome-active .wizard-card {
     background-color: #f8fafc !important;
     box-shadow: none !important;
     border: none !important;
-    padding-top: 25px !important;
+    padding-top: 0 !important;
     padding-left: 8px !important;
     padding-right: 8px !important;
   }
