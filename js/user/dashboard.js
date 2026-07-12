@@ -330,11 +330,12 @@ const UserDashboard = {
             </div>
             <div class="meal-toggle-text">
               <div class="meal-title-row">
-                <h4 style="margin:0; line-height:1.2;">${meal.label}</h4>
-                <span class="meal-status-badge ${badgeClass}">
+                <h4 style="margin:0; line-height:1.2; white-space: nowrap;">${meal.label}</h4>
+                <span class="meal-status-badge ${badgeClass}" style="white-space: nowrap;">
                   ${badgeText}
                 </span>
               </div>
+              <div class="meal-desc" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 1px; margin-bottom: 2px;">${meal.desc}</div>
               <div class="meal-cutoff-subtitle" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 4px; display: flex; align-items: center;">
                 ${subtitleIcon}
                 ${isLocked ? 'Deadline was ' : 'Cutoff: '}${Utils.formatTime(meal.deadline)}
