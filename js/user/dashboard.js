@@ -596,11 +596,14 @@ const UserDashboard = {
         // Format user deposits/deductions
         userDepositsData.forEach(d => {
           const isDeposit = d.type === 'deposit';
+          const isOtherCosting = d.type === 'other_costing';
           combined.push({
-            action: isDeposit ? 'deposit_added' : 'deduction_added',
+            action: isDeposit ? 'deposit_added' : (isOtherCosting ? 'other_costing_added' : 'deduction_added'),
             details: isDeposit
               ? `Deposit ৳${d.amount} (${d.note || 'Regular Deposit'})`
-              : `Deducted ৳${Math.abs(d.amount)}: ${d.note || 'No reason specified'}`,
+              : (isOtherCosting
+                ? `Deducted ৳${Math.abs(d.amount)} for Other Costing: ${d.note || 'No description'}`
+                : `Deducted ৳${Math.abs(d.amount)}: ${d.note || 'No reason specified'}`),
             timestamp: d.timestamp || (d.date ? new Date(d.date).getTime() : 0),
             performedBy: 'manager'
           });
@@ -632,15 +635,17 @@ const UserDashboard = {
           let html = displayLogs.map(log => {
             const dotClass = log.action?.includes('deposit') ? 'accent'
               : log.action?.includes('deduction') ? 'danger'
-                : log.action?.includes('meal') ? 'warning'
-                  : log.action?.includes('bazar') ? ''
-                    : log.action?.includes('delete') ? 'danger'
-                      : '';
+                : log.action?.includes('other_costing') ? 'danger'
+                  : log.action?.includes('meal') ? 'warning'
+                    : log.action?.includes('bazar') ? ''
+                      : log.action?.includes('delete') ? 'danger'
+                        : '';
 
             let title;
             if (log.action === 'meals_updated_group') title = 'Meals';
             else if (log.action === 'deposit_added') title = 'Deposit Added';
             else if (log.action === 'deduction_added') title = 'Deduction';
+            else if (log.action === 'other_costing_added') title = 'Deduction : Other Costing';
             else if (log.action === 'bazar_added') title = 'Bazar Added';
             else title = log.action?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Activity';
 
