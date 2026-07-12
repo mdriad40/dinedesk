@@ -315,10 +315,10 @@ const UserDashboard = {
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
             <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z" />
           </svg>
-          Meal is ${isOn ? 'ON' : 'OFF'} · Cutoff: ${Utils.formatTime(meal.deadline)}
+          <span class="status-text-prefix">Meal is </span><span class="status-state ${isOn ? 'on' : 'off'}">${isOn ? 'ON' : 'OFF'}</span><span class="status-text-sep"> · </span><span class="status-cutoff"><span class="status-cutoff-prefix">Cutoff: </span>${Utils.formatTime(meal.deadline)}</span>
         `;
       } else if (isLocked) {
-        statusText = `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Locked · Deadline was ${Utils.formatTime(meal.deadline)}`;
+        statusText = `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> <span class="status-state locked">Locked</span><span class="status-text-sep"> · </span><span class="status-cutoff"><span class="status-cutoff-prefix">Deadline was </span>${Utils.formatTime(meal.deadline)}</span>`;
       } else {
         // Unlocked meal (both autoEnabled and manual)
         statusText = `
@@ -326,7 +326,7 @@ const UserDashboard = {
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
-          Meal is ${isOn ? 'ON' : 'OFF'} · Cutoff: ${Utils.formatTime(meal.deadline)}
+          <span class="status-text-prefix">Meal is </span><span class="status-state ${isOn ? 'on' : 'off'}">${isOn ? 'ON' : 'OFF'}</span><span class="status-text-sep"> · </span><span class="status-cutoff"><span class="status-cutoff-prefix">Cutoff: </span>${Utils.formatTime(meal.deadline)}</span>
         `;
       }
 

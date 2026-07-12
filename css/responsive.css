@@ -163,6 +163,39 @@
     grid-template-columns: 1fr;
   }
 
+  /* Meal toggle card responsive adjustments */
+  .meal-toggle-card {
+    padding: var(--space-3) var(--space-4) !important;
+    gap: var(--space-3) !important;
+  }
+
+  .meal-toggle-info {
+    gap: var(--space-3) !important;
+  }
+
+  .meal-toggle-icon {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .meal-toggle-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .meal-toggle-text h4 {
+    font-size: var(--font-sm) !important;
+  }
+
+  .meal-toggle-status {
+    font-size: 11px !important;
+    margin-top: 1px !important;
+  }
+
+  .meal-toggle-status .status-text-prefix {
+    display: none !important;
+  }
+
   /* Meal users grid */
   .meal-users-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -299,6 +332,37 @@
 @media (max-width: 479px) {
   html {
     font-size: 15px;
+  }
+
+  .meal-toggle-card {
+    padding: var(--space-3) var(--space-3) !important;
+  }
+
+  .meal-toggle-info {
+    gap: var(--space-2) !important;
+  }
+
+  .meal-toggle-icon {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .meal-toggle-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .meal-toggle-status .status-cutoff-prefix {
+    display: none !important;
+  }
+
+  .quantity-selector {
+    height: 28px !important;
+  }
+
+  .qty-btn {
+    width: 28px !important;
+    font-size: 14px !important;
   }
 
   .stats-grid {
