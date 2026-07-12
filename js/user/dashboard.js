@@ -348,7 +348,7 @@ const UserDashboard = {
                     onclick="DineDesk.userDashboard.adjustMealCount('${meal.type}', -1)">-</button>
             <span class="qty-val">${mealCount}</span>
             <button class="qty-btn qty-plus" type="button" 
-                    ${isLocked || mealCount >= 10 ? 'disabled' : ''} 
+                    ${isLocked || mealCount >= 4 ? 'disabled' : ''} 
                     onclick="DineDesk.userDashboard.adjustMealCount('${meal.type}', 1)">+</button>
           </div>
         </div>
@@ -372,7 +372,7 @@ const UserDashboard = {
         currentCount = currentVal;
       }
 
-      const newCount = Math.min(10, Math.max(0, currentCount + delta));
+      const newCount = Math.min(4, Math.max(0, currentCount + delta));
       if (newCount === currentCount) return;
 
       // Update database
