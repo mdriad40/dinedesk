@@ -4,6 +4,7 @@
 
 /* ======== TABLET & BELOW (< 1024px) ======== */
 @media (max-width: 1023px) {
+
   /* Sidebar hidden, show toggle */
   .sidebar {
     transform: translateX(-100%);
@@ -77,7 +78,8 @@
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     background: var(--bg-primary);
-    z-index: var(--z-overlay); /* 300 - higher than bottom-nav (200) */
+    z-index: var(--z-overlay);
+    /* 300 - higher than bottom-nav (200) */
   }
 
   /* Notification panel */
@@ -90,7 +92,8 @@
     width: 100%;
     border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
     max-height: 60vh;
-    z-index: var(--z-modal); /* 400 - make sure it's on top of everything inside header context */
+    z-index: var(--z-modal);
+    /* 400 - make sure it's on top of everything inside header context */
   }
 
   /* Chart */
@@ -134,6 +137,7 @@
 
 /* ======== MOBILE (< 768px) ======== */
 @media (max-width: 767px) {
+
   /* Single column stats */
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -163,6 +167,17 @@
     grid-template-columns: 1fr;
   }
 
+  /* Responsive Display Utilities */
+  .mobile-only {
+    display: block !important;
+  }
+  span.mobile-only {
+    display: inline-flex !important;
+  }
+  .desktop-only {
+    display: none !important;
+  }
+
   /* Meal toggle card responsive adjustments */
   .meal-toggle-card {
     padding: var(--space-3) var(--space-4) !important;
@@ -187,13 +202,10 @@
     font-size: var(--font-sm) !important;
   }
 
-  .meal-toggle-status {
+  .meal-cutoff-mobile {
     font-size: 11px !important;
-    margin-top: 1px !important;
-  }
-
-  .meal-toggle-status .status-text-prefix {
-    display: none !important;
+    color: var(--text-tertiary) !important;
+    margin-top: 3px !important;
   }
 
   /* Meal users grid */
@@ -352,10 +364,6 @@
     height: 16px !important;
   }
 
-  .meal-toggle-status .status-cutoff-prefix {
-    display: none !important;
-  }
-
   .quantity-selector {
     height: 28px !important;
   }
@@ -494,6 +502,7 @@
 
 /* ======== PRINT STYLES ======== */
 @media print {
+
   .sidebar,
   .bottom-nav,
   .top-header,
@@ -528,6 +537,7 @@
 
 /* ======== REDUCED MOTION ======== */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -554,4 +564,55 @@
   .content-area {
     padding-bottom: calc(52px + var(--space-4));
   }
+}
+
+/* ======== RESPONSIVE DISPLAY UTILITIES ======== */
+.mobile-only {
+  display: none !important;
+}
+
+.desktop-only {
+  display: block;
+}
+
+span.desktop-only {
+  display: inline;
+}
+
+/* Meal status badge styles */
+.meal-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.meal-status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
+.meal-status-badge.on {
+  background: #D1FAE5;
+  color: #065F46;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.meal-status-badge.off {
+  background: #FEF2F2;
+  color: #991B1B;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.meal-status-badge.locked {
+  background: #FFFBEB;
+  color: #92400E;
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }

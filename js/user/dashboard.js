@@ -122,7 +122,7 @@ const UserDashboard = {
     const rateMode = this.settings.rateMode || 'market';
     const fixedRates = rateMode === 'fixed' ? (this.settings.fixedRates || null) : null;
     const mealCost = Utils.calcMealCost(mealRate, this.monthlyMeals, this.monthlyMealsBreakdown, fixedRates);
-    
+
     const otherCosting = this.monthlyOtherCosting || 0;
     const deduction = this.monthlyDeduction || 0;
     const totalCost = mealCost + otherCosting;
@@ -315,10 +315,10 @@ const UserDashboard = {
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
             <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z" />
           </svg>
-          <span class="status-text-prefix">Meal is </span><span class="status-state ${isOn ? 'on' : 'off'}">${isOn ? 'ON' : 'OFF'}</span><span class="status-text-sep"> · </span><span class="status-cutoff"><span class="status-cutoff-prefix">Cutoff: </span>${Utils.formatTime(meal.deadline)}</span>
+          Meal is ${isOn ? 'ON' : 'OFF'} · Cutoff: ${Utils.formatTime(meal.deadline)}
         `;
       } else if (isLocked) {
-        statusText = `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> <span class="status-state locked">Locked</span><span class="status-text-sep"> · </span><span class="status-cutoff"><span class="status-cutoff-prefix">Deadline was </span>${Utils.formatTime(meal.deadline)}</span>`;
+        statusText = `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Locked · Deadline was ${Utils.formatTime(meal.deadline)}`;
       } else {
         // Unlocked meal (both autoEnabled and manual)
         statusText = `
@@ -326,7 +326,7 @@ const UserDashboard = {
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
-          <span class="status-text-prefix">Meal is </span><span class="status-state ${isOn ? 'on' : 'off'}">${isOn ? 'ON' : 'OFF'}</span><span class="status-text-sep"> · </span><span class="status-cutoff"><span class="status-cutoff-prefix">Cutoff: </span>${Utils.formatTime(meal.deadline)}</span>
+          Meal is ${isOn ? 'ON' : 'OFF'} · Cutoff: ${Utils.formatTime(meal.deadline)}
         `;
       }
 
@@ -337,9 +337,17 @@ const UserDashboard = {
               ${meal.icon}
             </div>
             <div class="meal-toggle-text">
-              <h4 style="margin:0; line-height:1.2;">${meal.label}</h4>
-              <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 1px; margin-bottom: 2px;">${meal.desc}</div>
-              <div class="meal-toggle-status">${statusText}</div>
+              <div class="meal-title-row">
+                <h4 style="margin:0; line-height:1.2;">${meal.label}</h4>
+                <span class="meal-status-badge mobile-only ${isLocked ? 'locked' : (isOn ? 'on' : 'off')}">
+                  ${isLocked ? 'Locked' : (isOn ? 'ON' : 'OFF')}
+                </span>
+              </div>
+              <div class="meal-desc desktop-only" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 1px; margin-bottom: 2px;">${meal.desc}</div>
+              <div class="meal-toggle-status desktop-only">${statusText}</div>
+              <div class="meal-cutoff-mobile mobile-only">
+                ${isLocked ? 'Deadline: ' : 'Cutoff: '}${Utils.formatTime(meal.deadline)}
+              </div>
             </div>
           </div>
           <div class="quantity-selector ${isLocked ? 'disabled' : ''}">
