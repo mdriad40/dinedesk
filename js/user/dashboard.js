@@ -483,6 +483,13 @@ const UserDashboard = {
       return `${type} updated`;
     }
 
+    // New format: "Breakfast count updated to 2" -> "Breakfast ON (2)"
+    const countMatch = detail.match(/^(\w+) count updated to (\d+)$/i);
+    if (countMatch) {
+      const type = countMatch[1].charAt(0).toUpperCase() + countMatch[1].slice(1).toLowerCase();
+      return `${type} ON (${countMatch[2]})`;
+    }
+
     // Already in new format — return as-is
     return detail;
   },
@@ -683,6 +690,24 @@ const UserDashboard = {
               );
               const mealType = this._extractMealType(detail || log.details || '') || 'Meal';
 
+              // Parse meal count
+              let count = 1;
+              if (!isOn) {
+                count = 0;
+              } else {
+                const match = detail.match(/ON\s*\((\d+)\)/i) || 
+                              (log.details || '').match(/(?:updated to|set to|ON\s*\(|count\s+is\s+)(\d+)/i) ||
+                              detail.match(/^(\d+)\s+/);
+                if (match) {
+                  count = parseInt(match[1], 10);
+                } else {
+                  const legacyMatch = (log.details || '').match(/updated from \d+ to (\d+)/i);
+                  if (legacyMatch) {
+                    count = parseInt(legacyMatch[1], 10);
+                  }
+                }
+              }
+
               // Format full date + time
               const ts = log.timestamp;
               let dateTimeStr = '';
@@ -701,6 +726,8 @@ const UserDashboard = {
                 ? '<path d="M5 12l5 5L20 7"/>'
                 : '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
 
+              const pillText = count > 1 ? `ON (${count})` : (isOn ? 'ON' : 'OFF');
+
               return `
                 <div class="meal-toggle-history-item">
                   <div class="mth-icon-wrap" style="${isOn ? 'background:var(--primary-50);color:var(--primary-600);' : 'background:#FEF2F2;color:#DC2626;'}">
@@ -710,7 +737,7 @@ const UserDashboard = {
                     <div class="mth-meal-type">${mealType}</div>
                     <div class="mth-datetime">${dateTimeStr}</div>
                   </div>
-                  <span class="mth-pill" style="${pillColor}">${isOn ? 'ON' : 'OFF'}</span>
+                  <span class="mth-pill" style="${pillColor}">${pillText}</span>
                 </div>
               `;
             }).join('');
