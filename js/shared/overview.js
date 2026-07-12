@@ -10,8 +10,8 @@ const OverviewModule = {
     this.diningId = diningId;
 
     const triggerRefresh = () => {
-      const isOverviewVisible = Router.currentPage === 'overview' || 
-                               (Router.currentPage === 'dashboard' && DineDesk.state.role === 'admin');
+      const isOverviewVisible = Router.currentPage === 'overview' ||
+        (Router.currentPage === 'dashboard' && DineDesk.state.role === 'admin');
       if (isOverviewVisible) {
         this.refresh();
       }
@@ -108,7 +108,7 @@ const OverviewModule = {
         if (trackedMeals.breakfast) activeRates.push(fixedRates.breakfast || 0);
         if (trackedMeals.lunch) activeRates.push(fixedRates.lunch || 0);
         if (trackedMeals.dinner) activeRates.push(fixedRates.dinner || 0);
-        mealRate = activeRates.length > 0 ? (activeRates.reduce((a,b)=>a+b, 0) / activeRates.length) : 0;
+        mealRate = activeRates.length > 0 ? (activeRates.reduce((a, b) => a + b, 0) / activeRates.length) : 0;
       } else {
         mealRate = Utils.calcMealRate(totalBazar, totalMeals);
       }
@@ -162,86 +162,191 @@ const OverviewModule = {
     const container = document.getElementById('overviewStats');
     if (!container) return;
 
+    const bazarCost = totalBazar !== undefined ? totalBazar : totalMealCost;
+
     container.innerHTML = `
-      <div class="stat-card">
-        <div class="stat-icon primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <!-- Desktop layout: 9 individual stat cards -->
+      <div class="overview-desktop-stats">
+        <div class="stat-card">
+          <div class="stat-icon primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Total Deposit</div>
+            <div class="stat-value">${Utils.currency(totalDeposit)}</div>
+          </div>
         </div>
-        <div class="stat-info">
-          <div class="stat-label">Total Deposit</div>
-          <div class="stat-value">${Utils.currency(totalDeposit)}</div>
+        <div class="stat-card">
+          <div class="stat-icon accent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Total Meals</div>
+            <div class="stat-value">${Utils.formatNumber(totalMeals)}</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Meal Rate</div>
+            <div class="stat-value">${Utils.currency(mealRate)}</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Total Bazar</div>
+            <div class="stat-value">${Utils.currency(bazarCost)}</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M12 11v6m-3-3h6"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Total Meal Cost</div>
+            <div class="stat-value">${Utils.currency(totalMealCost)}</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--warning-100);color:var(--warning-700);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Total Other Cost</div>
+            <div class="stat-value">${Utils.currency(totalOtherCosting)}</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon danger">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Total Deduction</div>
+            <div class="stat-value">${Utils.currency(totalDeductions)}</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--danger-100);color:var(--danger-700);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><path d="M16 8H8m8 4H8m4 4H8"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Total Cost</div>
+            <div class="stat-value">${Utils.currency(totalCost)}</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon ${netBalance >= 0 ? 'accent' : 'danger'}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">Net Balance</div>
+            <div class="stat-value" style="color:${netBalance >= 0 ? 'var(--accent-600)' : 'var(--danger-600)'}">${Utils.currency(netBalance)}</div>
+          </div>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon accent">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/></svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label">Total Meals</div>
-          <div class="stat-value">${Utils.formatNumber(totalMeals)}</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label">Meal Rate</div>
-          <div class="stat-value">${Utils.currency(mealRate)}</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon warning">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label">Total Bazar</div>
-          <div class="stat-value">${Utils.currency(totalBazar !== undefined ? totalBazar : totalMealCost)}</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon warning">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M12 11v6m-3-3h6"/></svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label">Total Meal Cost</div>
-          <div class="stat-value">${Utils.currency(totalMealCost)}</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:var(--warning-100);color:var(--warning-700);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label">Total Other Cost</div>
-          <div class="stat-value">${Utils.currency(totalOtherCosting)}</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon danger">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label">Total Deduction</div>
-          <div class="stat-value">${Utils.currency(totalDeductions)}</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:var(--danger-100);color:var(--danger-700);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><path d="M16 8H8m8 4H8m4 4H8"/></svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label">Total Cost</div>
-          <div class="stat-value">${Utils.currency(totalCost)}</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon ${netBalance >= 0 ? 'accent' : 'danger'}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label">Net Balance</div>
-          <div class="stat-value" style="color:${netBalance >= 0 ? 'var(--accent-600)' : 'var(--danger-600)'}">${Utils.currency(netBalance)}</div>
+
+      <!-- Mobile layout: 2-column borderless table with green rounded bottom -->
+      <div class="overview-mobile-stats">
+        <div class="overview-table-card">
+          <div class="overview-table-grid">
+            <!-- Row 1 -->
+            <div class="table-cell">
+              <div class="cell-icon-box text-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              </div>
+              <div class="cell-info">
+                <span class="cell-label">Total Deposit</span>
+                <span class="cell-value">${Utils.currency(totalDeposit)}</span>
+              </div>
+            </div>
+            <div class="table-cell">
+              <div class="cell-icon-box text-accent">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/></svg>
+              </div>
+              <div class="cell-info">
+                <span class="cell-label">Total Meals</span>
+                <span class="cell-value">${Utils.formatNumber(totalMeals)}</span>
+              </div>
+            </div>
+
+            <!-- Row 2 -->
+            <div class="table-cell">
+              <div class="cell-icon-box text-warning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+              </div>
+              <div class="cell-info">
+                <span class="cell-label">Bazar Cost</span>
+                <span class="cell-value">${Utils.currency(bazarCost)}</span>
+              </div>
+            </div>
+            <div class="table-cell">
+              <div class="cell-icon-box text-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              </div>
+              <div class="cell-info">
+                <span class="cell-label">Meal Rate</span>
+                <span class="cell-value">${Utils.currency(mealRate)}</span>
+              </div>
+            </div>
+
+            <!-- Row 3 -->
+            <div class="table-cell">
+              <div class="cell-icon-box text-warning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M12 11v6m-3-3h6"/></svg>
+              </div>
+              <div class="cell-info">
+                <span class="cell-label">Meal Cost</span>
+                <span class="cell-value">${Utils.currency(totalMealCost)}</span>
+              </div>
+            </div>
+            <div class="table-cell">
+              <div class="cell-icon-box text-orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              </div>
+              <div class="cell-info">
+                <span class="cell-label">Other Cost</span>
+                <span class="cell-value">${Utils.currency(totalOtherCosting)}</span>
+              </div>
+            </div>
+
+            <!-- Row 4 -->
+            <div class="table-cell">
+              <div class="cell-icon-box text-danger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </div>
+              <div class="cell-info">
+                <span class="cell-label">Total Deduction</span>
+                <span class="cell-value">${Utils.currency(totalDeductions)}</span>
+              </div>
+            </div>
+            <div class="table-cell">
+              <div class="cell-icon-box text-danger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><path d="M16 8H8m8 4H8m4 4H8"/></svg>
+              </div>
+              <div class="cell-info">
+                <span class="cell-label">Total Cost</span>
+                <span class="cell-value">${Utils.currency(totalCost)}</span>
+              </div>
+            </div>
+
+            <!-- Row 5 (Full Width Column) -->
+            <div class="table-cell-full">
+              <div class="cell-full-content">
+                <div class="cell-full-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                </div>
+                <div class="cell-full-info">
+                  <span class="cell-full-label">Net Balance</span>
+                  <span class="cell-full-value">${Utils.currency(netBalance)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     `;

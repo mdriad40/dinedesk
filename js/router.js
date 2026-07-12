@@ -98,7 +98,7 @@ const Router = {
     if (backBtn) {
       const showBack = (page === 'mealchart' || page === 'bazar' || page === 'summary');
       backBtn.style.display = showBack ? 'inline-flex' : 'none';
-      
+
       const menuBtn = document.querySelector('.mobile-menu-btn');
       if (menuBtn) {
         if (showBack) {

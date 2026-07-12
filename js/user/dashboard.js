@@ -318,7 +318,7 @@ const UserDashboard = {
         badgeClass = isOn ? 'on' : 'off';
       }
 
-      const subtitleIcon = isLocked 
+      const subtitleIcon = isLocked
         ? `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px; color: var(--text-tertiary);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`
         : `<svg class="clock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px; color: var(--text-tertiary);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 
@@ -706,9 +706,9 @@ const UserDashboard = {
                 if (plusMatch) {
                   count = parseInt(plusMatch[1], 10) + 1;
                 } else {
-                  const match = detail.match(/ON\s*\((\d+)\)/i) || 
-                                (log.details || '').match(/(?:updated to|set to|ON\s*\(|count\s+is\s+)(\d+)/i) ||
-                                detail.match(/^(\d+)\s+/);
+                  const match = detail.match(/ON\s*\((\d+)\)/i) ||
+                    (log.details || '').match(/(?:updated to|set to|ON\s*\(|count\s+is\s+)(\d+)/i) ||
+                    detail.match(/^(\d+)\s+/);
                   if (match) {
                     count = parseInt(match[1], 10);
                   } else {
