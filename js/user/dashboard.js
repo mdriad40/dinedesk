@@ -465,8 +465,9 @@ const UserDashboard = {
     if (updatedMatch) {
       const type = updatedMatch[1].charAt(0).toUpperCase() + updatedMatch[1].slice(1).toLowerCase();
       const newCount = parseInt(updatedMatch[3]);
-      if (newCount === 0) return `${type} removed`;
-      return `${newCount} ${type} added`;
+      if (newCount === 0) return `${type} OFF`;
+      if (newCount === 1) return `${type} ON`;
+      return `${type} ON (+${newCount - 1})`;
     }
 
     // Old format: "Dinner meal turned ON" / "Breakfast meal turned OFF"
@@ -483,11 +484,12 @@ const UserDashboard = {
       return `${type} updated`;
     }
 
-    // New format: "Breakfast count updated to 2" -> "Breakfast ON (2)"
+    // New format: "Breakfast count updated to 2" -> "Breakfast ON (+1)"
     const countMatch = detail.match(/^(\w+) count updated to (\d+)$/i);
     if (countMatch) {
       const type = countMatch[1].charAt(0).toUpperCase() + countMatch[1].slice(1).toLowerCase();
-      return `${type} ON (${countMatch[2]})`;
+      const newCount = parseInt(countMatch[2], 10);
+      return `${type} ON (+${newCount - 1})`;
     }
 
     // Already in new format — return as-is
@@ -695,15 +697,20 @@ const UserDashboard = {
               if (!isOn) {
                 count = 0;
               } else {
-                const match = detail.match(/ON\s*\((\d+)\)/i) || 
-                              (log.details || '').match(/(?:updated to|set to|ON\s*\(|count\s+is\s+)(\d+)/i) ||
-                              detail.match(/^(\d+)\s+/);
-                if (match) {
-                  count = parseInt(match[1], 10);
+                const plusMatch = detail.match(/ON\s*\(\+(\d+)\)/i);
+                if (plusMatch) {
+                  count = parseInt(plusMatch[1], 10) + 1;
                 } else {
-                  const legacyMatch = (log.details || '').match(/updated from \d+ to (\d+)/i);
-                  if (legacyMatch) {
-                    count = parseInt(legacyMatch[1], 10);
+                  const match = detail.match(/ON\s*\((\d+)\)/i) || 
+                                (log.details || '').match(/(?:updated to|set to|ON\s*\(|count\s+is\s+)(\d+)/i) ||
+                                detail.match(/^(\d+)\s+/);
+                  if (match) {
+                    count = parseInt(match[1], 10);
+                  } else {
+                    const legacyMatch = (log.details || '').match(/updated from \d+ to (\d+)/i);
+                    if (legacyMatch) {
+                      count = parseInt(legacyMatch[1], 10);
+                    }
                   }
                 }
               }
@@ -726,7 +733,7 @@ const UserDashboard = {
                 ? '<path d="M5 12l5 5L20 7"/>'
                 : '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
 
-              const pillText = count > 1 ? `ON (${count})` : (isOn ? 'ON' : 'OFF');
+              const pillText = count > 1 ? `ON (+${count - 1})` : (isOn ? 'ON' : 'OFF');
 
               return `
                 <div class="meal-toggle-history-item">
