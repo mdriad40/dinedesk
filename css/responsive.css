@@ -353,12 +353,12 @@
   }
 
   .quantity-selector {
-    height: 32px !important;
+    height: 36px !important;
   }
 
   .qty-btn {
-    width: 32px !important;
-    font-size: 16px !important;
+    width: 36px !important;
+    font-size: 18px !important;
   }
 
   .stats-grid {
