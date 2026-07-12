@@ -1269,8 +1269,8 @@ textarea.form-input {
 }
 
 .meal-toggle-icon {
-  width: 44px;
-  height: 44px;
+  width: clamp(34px, 10vw, 44px);
+  height: clamp(34px, 10vw, 44px);
   border-radius: var(--radius-lg);
   background: #ffffff !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -1281,8 +1281,8 @@ textarea.form-input {
 }
 
 .meal-toggle-icon svg {
-  width: 22px;
-  height: 22px;
+  width: clamp(16px, 5vw, 22px);
+  height: clamp(16px, 5vw, 22px);
   color: #10B981 !important;
 }
 
@@ -2202,7 +2202,7 @@ textarea.form-input {
   background: var(--bg-primary);
   width: fit-content;
   box-shadow: 0 2px 6px rgba(5, 150, 105, 0.05);
-  height: 40px;
+  height: 34px;
 }
 
 .quantity-selector.disabled {
@@ -2212,10 +2212,10 @@ textarea.form-input {
 }
 
 .qty-btn {
-  width: 40px;
+  width: 34px;
   height: 100%;
   border: none;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: var(--weight-bold);
   display: flex;
   align-items: center;
@@ -2326,7 +2326,7 @@ textarea.form-input {
   background: var(--primary-50);
 }
 
-.members-checklist-item input[type="checkbox"]:checked ~ .members-checklist-name {
+.members-checklist-item input[type="checkbox"]:checked~.members-checklist-name {
   color: var(--primary-600);
 }
 
