@@ -308,27 +308,19 @@ const UserDashboard = {
       const isOn = mealCount > 0;
       const cardClass = (isLocked ? 'locked ' : '') + (isOn ? 'on' : 'off');
 
-      let statusText = '';
-      if (isCompleted) {
-        statusText = `
-          <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px; color: var(--primary-600);">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z" />
-          </svg>
-          Meal is ${isOn ? 'ON' : 'OFF'} · Cutoff: ${Utils.formatTime(meal.deadline)}
-        `;
-      } else if (isLocked) {
-        statusText = `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Locked · Deadline was ${Utils.formatTime(meal.deadline)}`;
+      let badgeText = '';
+      let badgeClass = '';
+      if (isLocked) {
+        badgeText = isOn ? 'ON & Locked' : 'OFF & Locked';
+        badgeClass = 'locked';
       } else {
-        // Unlocked meal (both autoEnabled and manual)
-        statusText = `
-          <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px; color: ${isOn ? 'var(--primary-600)' : 'var(--danger-600)'};">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-          Meal is ${isOn ? 'ON' : 'OFF'} · Cutoff: ${Utils.formatTime(meal.deadline)}
-        `;
+        badgeText = isOn ? 'ON' : 'OFF';
+        badgeClass = isOn ? 'on' : 'off';
       }
+
+      const subtitleIcon = isLocked 
+        ? `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px; color: var(--text-tertiary);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`
+        : `<svg class="clock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px; color: var(--text-tertiary);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 
       return `
         <div class="meal-toggle-card ${cardClass}">
@@ -339,14 +331,13 @@ const UserDashboard = {
             <div class="meal-toggle-text">
               <div class="meal-title-row">
                 <h4 style="margin:0; line-height:1.2;">${meal.label}</h4>
-                <span class="meal-status-badge mobile-only ${isLocked ? 'locked' : (isOn ? 'on' : 'off')}">
-                  ${isLocked ? 'Locked' : (isOn ? 'ON' : 'OFF')}
+                <span class="meal-status-badge ${badgeClass}">
+                  ${badgeText}
                 </span>
               </div>
-              <div class="meal-desc desktop-only" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 1px; margin-bottom: 2px;">${meal.desc}</div>
-              <div class="meal-toggle-status desktop-only">${statusText}</div>
-              <div class="meal-cutoff-mobile mobile-only">
-                ${isLocked ? 'Deadline: ' : 'Cutoff: '}${Utils.formatTime(meal.deadline)}
+              <div class="meal-cutoff-subtitle" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 4px; display: flex; align-items: center;">
+                ${subtitleIcon}
+                ${isLocked ? 'Deadline was ' : 'Cutoff: '}${Utils.formatTime(meal.deadline)}
               </div>
             </div>
           </div>

@@ -167,17 +167,6 @@
     grid-template-columns: 1fr;
   }
 
-  /* Responsive Display Utilities */
-  .mobile-only {
-    display: block !important;
-  }
-  span.mobile-only {
-    display: inline-flex !important;
-  }
-  .desktop-only {
-    display: none !important;
-  }
-
   /* Meal toggle card responsive adjustments */
   .meal-toggle-card {
     padding: var(--space-3) var(--space-4) !important;
@@ -202,9 +191,8 @@
     font-size: var(--font-sm) !important;
   }
 
-  .meal-cutoff-mobile {
+  .meal-cutoff-subtitle {
     font-size: 11px !important;
-    color: var(--text-tertiary) !important;
     margin-top: 3px !important;
   }
 
@@ -566,20 +554,7 @@
   }
 }
 
-/* ======== RESPONSIVE DISPLAY UTILITIES ======== */
-.mobile-only {
-  display: none !important;
-}
-
-.desktop-only {
-  display: block;
-}
-
-span.desktop-only {
-  display: inline;
-}
-
-/* Meal status badge styles */
+/* ======== MEAL CARD BADGES & TITLE ROW (GLOBAL) ======== */
 .meal-title-row {
   display: flex;
   align-items: center;
@@ -615,4 +590,12 @@ span.desktop-only {
   background: #FFFBEB;
   color: #92400E;
   border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.meal-cutoff-subtitle {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
 }
