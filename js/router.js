@@ -5,6 +5,7 @@
 const Router = {
   currentPage: 'dashboard',
   adminPages: ['users', 'meals', 'finance', 'settings', 'mymeal'],
+  scrollPositions: {},
 
   /**
    * Initialize the router
@@ -47,6 +48,12 @@ const Router = {
    * Show a specific page section and update nav state
    */
   _showPage(page) {
+    // Save scroll position of current page before switching
+    const contentArea = document.querySelector('.content-area');
+    if (contentArea && this.currentPage) {
+      this.scrollPositions[this.currentPage] = contentArea.scrollTop;
+    }
+
     // Validate page
     const section = document.getElementById(`page-${page}`);
     if (!section) {
@@ -127,6 +134,19 @@ const Router = {
 
     // Trigger page-specific init
     this._onPageEnter(page);
+
+    // Restore scroll position for the new page
+    if (contentArea) {
+      const savedScroll = this.scrollPositions[page] || 0;
+      contentArea.scrollTop = savedScroll;
+
+      // Reinforced fallback to handle dynamic rendering or layout reflows
+      requestAnimationFrame(() => {
+        if (contentArea) {
+          contentArea.scrollTop = savedScroll;
+        }
+      });
+    }
   },
 
   /**
