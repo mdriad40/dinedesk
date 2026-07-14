@@ -51,17 +51,17 @@ const Notifications = {
     }
   },
 
-  /**
-   * Initialize realtime notification listener
-   */
-  initListener(diningId, userId) {
+  initListener(diningId, userId, userJoinedAt = null) {
     if (!diningId) return;
 
     const notifRef = db.ref(`dinings/${diningId}/notifications`);
     notifRef.orderByChild('timestamp').limitToLast(20).on('value', (snap) => {
       const notifications = [];
       snap.forEach(child => {
-        notifications.push({ id: child.key, ...child.val() });
+        const val = child.val();
+        if (!userJoinedAt || (val.timestamp && val.timestamp >= userJoinedAt)) {
+          notifications.push({ id: child.key, ...val });
+        }
       });
       notifications.reverse();
       this.renderNotifications(notifications, userId);

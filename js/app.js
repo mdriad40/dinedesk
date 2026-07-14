@@ -16,7 +16,8 @@ window.DineDesk = {
     monthlyMealRate: 0,
     totalMeals: 0,
     totalBazar: 0,
-    totalDeposit: 0
+    totalDeposit: 0,
+    userJoinedAt: null
   },
 
   // Module references (assigned during init)
@@ -103,6 +104,7 @@ window.DineDesk = {
         }
 
         this.state.role = userData.role || 'user';
+        this.state.userJoinedAt = userData.createdAt || null;
         console.log('[DineDesk] Role:', this.state.role, '| Dining:', mapping.diningId);
 
         // Setup the UI
@@ -204,7 +206,7 @@ window.DineDesk = {
     UserDashboard.init(diningId, userId);
     HistoryModule.init(diningId, userId);
     OverviewModule.init(diningId);
-    Notifications.initListener(diningId, userId);
+    Notifications.initListener(diningId, userId, this.state.userJoinedAt);
     if (window.MealChartModule) MealChartModule.init(diningId, userId);
     if (window.BazarHistoryModule) BazarHistoryModule.init(diningId, userId);
     if (window.SummaryModule) SummaryModule.init(diningId, userId);
