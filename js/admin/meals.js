@@ -3,10 +3,11 @@
    ============================================ */
 
 const MealsModule = {
-  selectedType: 'breakfast',
+  selectedTypes: new Set(['breakfast']),
   selectedUsers: new Set(),
   currentDate: Utils.today(),
   mealsData: {},
+  selectedLockedMeals: [],
 
   /**
    * Initialize meals module
@@ -28,7 +29,7 @@ const MealsModule = {
     db.ref(`dinings/${diningId}/settings`).on('value', (snap) => {
       const s = snap.val() || {};
       const trackedMeals = s.trackedMeals || { breakfast: true, lunch: true, dinner: true };
-      
+
       const tabContainer = document.getElementById('mealTypeTabs');
       if (tabContainer) {
         tabContainer.innerHTML = '';
@@ -37,37 +38,32 @@ const MealsModule = {
           { type: 'lunch', label: '🍱 Lunch' },
           { type: 'dinner', label: '🌙 Dinner' }
         ];
-        
+
         let firstActive = null;
         mealsList.forEach(m => {
           if (trackedMeals[m.type] !== false) {
             if (!firstActive) firstActive = m.type;
-            const activeClass = this.selectedType === m.type ? 'active' : '';
+            const activeClass = this.selectedTypes.has(m.type) ? 'active' : '';
             tabContainer.innerHTML += `
               <button class="meal-type-tab ${activeClass}" data-type="${m.type}"
                 onclick="DineDesk.meals.selectType('${m.type}')">${m.label}</button>
             `;
           }
         });
-        
-        // If current selected type is disabled, switch to first active
-        if (trackedMeals[this.selectedType] === false && firstActive) {
-          this.selectedType = firstActive;
+
+        // If current selected types are all disabled, switch to first active
+        let hasActiveSelected = false;
+        this.selectedTypes.forEach(t => {
+          if (trackedMeals[t] !== false) hasActiveSelected = true;
+          else this.selectedTypes.delete(t);
+        });
+        if (!hasActiveSelected && firstActive) {
+          this.selectedTypes.clear();
+          this.selectedTypes.add(firstActive);
           this.renderUserGrid();
         }
       }
     });
-
-    // Complete Locked Meals Select change listener
-    const select = document.getElementById('completeMealSelect');
-    if (select) {
-      select.addEventListener('change', () => {
-        const btn = document.getElementById('btnCompleteMeal');
-        if (btn) {
-          btn.disabled = !select.value || select.querySelector(`option[value="${select.value}"]`)?.disabled;
-        }
-      });
-    }
 
     // Setup realtime listener for current month's meals
     this._listenMeals();
@@ -91,12 +87,16 @@ const MealsModule = {
   },
 
   /**
-   * Select meal type tab
+   * Select meal type tab (supports multi-select toggle)
    */
   selectType(type) {
-    this.selectedType = type;
+    if (this.selectedTypes.has(type)) {
+      this.selectedTypes.delete(type);
+    } else {
+      this.selectedTypes.add(type);
+    }
     document.querySelectorAll('.meal-type-tab').forEach(tab => {
-      tab.classList.toggle('active', tab.dataset.type === type);
+      tab.classList.toggle('active', this.selectedTypes.has(tab.dataset.type));
     });
     this.renderUserGrid();
   },
@@ -130,17 +130,28 @@ const MealsModule = {
       return;
     }
 
-    // Get existing meals for this date + type
+    // Get existing meals for this date
     const day = Utils.dayKey(this.currentDate);
-    const dayMeals = this.mealsData[day]?.[this.selectedType] || {};
 
     grid.innerHTML = userEntries.map(([id, user]) => {
-      const hasMeal = dayMeals[id] !== undefined;
-      const mealCount = dayMeals[id] || 0;
-      const isSelected = this.selectedUsers.has(id);
+      // Check if user has meals for any of the selected types
+      let hasMeal = false;
+      let maxMealCount = 0;
+      
+      this.selectedTypes.forEach(type => {
+        const typeMeals = this.mealsData[day]?.[type] || {};
+        if (typeMeals[id] !== undefined && typeMeals[id] > 0) {
+          hasMeal = true;
+          if (typeMeals[id] > maxMealCount) {
+            maxMealCount = typeMeals[id];
+          }
+        }
+      });
+
+      const mealCount = hasMeal ? maxMealCount : 1;
 
       // Auto-select users who already have a meal
-      if (hasMeal && !this.selectedUsers.has(id) && mealCount > 0) {
+      if (hasMeal && !this.selectedUsers.has(id)) {
         this.selectedUsers.add(id);
       }
 
@@ -150,8 +161,12 @@ const MealsModule = {
         <div class="meal-user-chip ${selected ? 'selected' : ''}" onclick="DineDesk.meals.toggleUser('${id}', this)" data-userid="${id}">
           <div class="avatar avatar-sm" style="background:${DineDesk.users._avatarColor(user.name)};">${Utils.initials(user.name)}</div>
           <span class="meal-user-chip-name">${user.name}</span>
-          <input type="number" class="meal-count-input" value="${hasMeal ? mealCount : 1}" min="0" max="10"
-                 onclick="event.stopPropagation()" oninput="DineDesk.meals.handleCountInput('${id}', this)" data-user-count="${id}">
+          <div class="number-spinner" style="margin-left: auto;" onclick="event.stopPropagation()">
+            <button type="button" onclick="DineDesk.meals.decrementUserCount('${id}')">−</button>
+            <input type="number" class="user-meal-count" value="${selected ? mealCount : 0}" min="0" max="10"
+                   oninput="DineDesk.meals.handleUserCountInput('${id}', this)" data-user-count="${id}">
+            <button type="button" onclick="DineDesk.meals.incrementUserCount('${id}')">+</button>
+          </div>
         </div>
       `;
     }).join('');
@@ -160,9 +175,56 @@ const MealsModule = {
   },
 
   /**
-   * Automatically toggle selection status based on user input
+   * Toggle user selection
    */
-  handleCountInput(userId, inputEl) {
+  toggleUser(userId, chipEl) {
+    const countInput = chipEl.querySelector(`[data-user-count="${userId}"]`);
+    if (this.selectedUsers.has(userId)) {
+      this.selectedUsers.delete(userId);
+      chipEl.classList.remove('selected');
+      if (countInput) countInput.value = 0;
+    } else {
+      this.selectedUsers.add(userId);
+      chipEl.classList.add('selected');
+      if (countInput && parseInt(countInput.value) === 0) {
+        countInput.value = 1;
+      }
+    }
+    this._updateSelectedCount();
+  },
+
+  /**
+   * Decrement user count spinner
+   */
+  decrementUserCount(userId) {
+    const input = document.querySelector(`[data-user-count="${userId}"]`);
+    if (input) {
+      let val = parseInt(input.value) || 0;
+      if (val > 0) {
+        input.value = val - 1;
+        this.handleUserCountInput(userId, input);
+      }
+    }
+  },
+
+  /**
+   * Increment user count spinner
+   */
+  incrementUserCount(userId) {
+    const input = document.querySelector(`[data-user-count="${userId}"]`);
+    if (input) {
+      let val = parseInt(input.value) || 0;
+      if (val < 10) {
+        input.value = val + 1;
+        this.handleUserCountInput(userId, input);
+      }
+    }
+  },
+
+  /**
+   * Handle manual input on user count field
+   */
+  handleUserCountInput(userId, inputEl) {
     const val = parseInt(inputEl.value) || 0;
     const chip = inputEl.closest('.meal-user-chip');
     if (val > 0) {
@@ -181,20 +243,6 @@ const MealsModule = {
   },
 
   /**
-   * Toggle user selection
-   */
-  toggleUser(userId, chipEl) {
-    if (this.selectedUsers.has(userId)) {
-      this.selectedUsers.delete(userId);
-      chipEl.classList.remove('selected');
-    } else {
-      this.selectedUsers.add(userId);
-      chipEl.classList.add('selected');
-    }
-    this._updateSelectedCount();
-  },
-
-  /**
    * Toggle select all
    */
   toggleSelectAll(checked) {
@@ -202,11 +250,25 @@ const MealsModule = {
     this.selectedUsers.clear();
 
     if (checked) {
-      Object.keys(users).forEach(id => this.selectedUsers.add(id));
+      const isManagerMealEnabled = !!(DineDesk.settings?.getSettings()?.managerMealEnabled);
+      Object.entries(users).forEach(([id, user]) => {
+        if (user.role === 'admin' && !isManagerMealEnabled) {
+          return;
+        }
+        this.selectedUsers.add(id);
+      });
     }
 
     document.querySelectorAll('.meal-user-chip').forEach(chip => {
       chip.classList.toggle('selected', checked);
+      const input = chip.querySelector('.user-meal-count');
+      if (input) {
+        if (checked) {
+          if (parseInt(input.value) === 0) input.value = 1;
+        } else {
+          input.value = 0;
+        }
+      }
     });
 
     this._updateSelectedCount();
@@ -225,9 +287,39 @@ const MealsModule = {
   },
 
   /**
+   * Decrement bulk count spinner
+   */
+  decrementBulkCount() {
+    const input = document.getElementById('bulkMealCount');
+    if (input) {
+      let val = parseInt(input.value) || 0;
+      if (val > 0) {
+        input.value = val - 1;
+      }
+    }
+  },
+
+  /**
+   * Increment bulk count spinner
+   */
+  incrementBulkCount() {
+    const input = document.getElementById('bulkMealCount');
+    if (input) {
+      let val = parseInt(input.value) || 0;
+      if (val < 10) {
+        input.value = val + 1;
+      }
+    }
+  },
+
+  /**
    * Save bulk meals to database
    */
   async saveBulkMeals() {
+    if (this.selectedTypes.size === 0) {
+      Notifications.toast('warning', 'No Meal Type Selected', 'Please select at least one meal type (Breakfast, Lunch, Dinner).');
+      return;
+    }
     if (this.selectedUsers.size === 0) {
       Notifications.toast('warning', 'No Users Selected', 'Please select at least one member.');
       return;
@@ -240,23 +332,30 @@ const MealsModule = {
       const month = this.currentDate.substring(0, 7);
       const day = Utils.dayKey(this.currentDate);
       const bulkCount = parseInt(document.getElementById('bulkMealCount').value) || 1;
+      const isBulkOverride = document.getElementById('overrideWithBulkCount')?.checked;
       const updates = {};
       const users = DineDesk.users.users;
 
-      // Get existing meals BEFORE updating the database (prevents race condition with DB listener)
-      const dayMeals = { ...(this.mealsData[day]?.[this.selectedType] || {}) };
+      // Get existing meals BEFORE updating the database
+      const dayMeals = {};
+      this.selectedTypes.forEach(type => {
+        dayMeals[type] = { ...(this.mealsData[day]?.[type] || {}) };
+      });
 
-      // Build meal updates
-      Object.keys(users).forEach(userId => {
-        if (this.selectedUsers.has(userId)) {
-          // Get individual count (from the input in the chip)
-          const countInput = document.querySelector(`[data-user-count="${userId}"]`);
-          const count = countInput ? parseInt(countInput.value) || bulkCount : bulkCount;
-          updates[`dinings/${this.diningId}/meals/${month}/${day}/${this.selectedType}/${userId}`] = count;
-        } else {
-          // Remove meal for unselected users
-          updates[`dinings/${this.diningId}/meals/${month}/${day}/${this.selectedType}/${userId}`] = null;
-        }
+      // Build meal updates for all selected meal types
+      this.selectedTypes.forEach(mealType => {
+        Object.keys(users).forEach(userId => {
+          if (this.selectedUsers.has(userId)) {
+            let count = bulkCount;
+            if (!isBulkOverride) {
+              const countInput = document.querySelector(`[data-user-count="${userId}"]`);
+              count = countInput ? parseInt(countInput.value) || bulkCount : bulkCount;
+            }
+            updates[`dinings/${this.diningId}/meals/${month}/${day}/${mealType}/${userId}`] = count;
+          } else {
+            updates[`dinings/${this.diningId}/meals/${month}/${day}/${mealType}/${userId}`] = null;
+          }
+        });
       });
 
       await db.ref().update(updates);
@@ -264,42 +363,53 @@ const MealsModule = {
       // Recalculate totals
       await this._recalculateTotals();
 
-      Notifications.toast('success', 'Meals Saved', `${this.selectedType} meals updated for ${this.currentDate}.`);
+      const typesLabel = Array.from(this.selectedTypes)
+        .map(t => t.charAt(0).toUpperCase() + t.slice(1))
+        .join(' & ');
+
+      Notifications.toast('success', 'Meals Saved', `${typesLabel} meals updated for ${this.currentDate}.`);
       await Notifications.create(
         this.diningId,
         'Meals Updated',
-        `${this.selectedType.charAt(0).toUpperCase() + this.selectedType.slice(1)} meals updated for ${Utils.formatDate(this.currentDate)}.`,
+        `${typesLabel} meals updated for ${Utils.formatDate(this.currentDate)}.`,
         'all',
         'meal'
       );
-      await Notifications.log(this.diningId, 'meals_updated', `${this.selectedType} meals updated for ${this.currentDate}`, DineDesk.state.userId);
+      await Notifications.log(this.diningId, 'meals_updated', `${typesLabel} meals updated for ${this.currentDate}`, DineDesk.state.userId);
 
       // Log individual meal updates for users whose meal counts changed
-      for (const userId of Object.keys(users)) {
-        const oldCount = dayMeals[userId] !== undefined ? dayMeals[userId] : 0;
-        let newCount = 0;
-        if (this.selectedUsers.has(userId)) {
-          const countInput = document.querySelector(`[data-user-count="${userId}"]`);
-          newCount = countInput ? parseInt(countInput.value) || bulkCount : bulkCount;
-        }
-
-        if (oldCount !== newCount) {
-          const user = users[userId];
-          if (user) {
-            const mealLabel = this.selectedType.charAt(0).toUpperCase() + this.selectedType.slice(1);
-            let detail;
-            if (newCount === 0) {
-              detail = `${mealLabel} removed`;
-            } else {
-              detail = `${newCount} ${mealLabel} added`;
+      for (const mealType of this.selectedTypes) {
+        for (const userId of Object.keys(users)) {
+          const oldCount = dayMeals[mealType]?.[userId] !== undefined ? dayMeals[mealType][userId] : 0;
+          let newCount = 0;
+          if (this.selectedUsers.has(userId)) {
+            let count = bulkCount;
+            if (!isBulkOverride) {
+              const countInput = document.querySelector(`[data-user-count="${userId}"]`);
+              count = countInput ? parseInt(countInput.value) || bulkCount : bulkCount;
             }
-            await Notifications.log(
-              this.diningId,
-              'meal_updated',
-              detail,
-              DineDesk.state.userId,
-              userId
-            );
+            newCount = count;
+          }
+
+          if (oldCount !== newCount) {
+            const user = users[userId];
+            if (user) {
+              const mealLabel = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+              let detail;
+              if (newCount === 0) {
+                detail = `${mealLabel} removed`;
+              } else {
+                detail = `${newCount} ${mealLabel} added`;
+              }
+              await Notifications.log(
+                this.diningId,
+                'meal_updated',
+                detail,
+                DineDesk.state.userId,
+                userId,
+                this.selectedTypes.size === 1
+              );
+            }
           }
         }
       }
@@ -384,11 +494,11 @@ const MealsModule = {
         <table class="data-table">
           <thead>
             <tr>
-              <th>Member</th>
-              <th>☀️ Breakfast</th>
-              <th>🍱 Lunch</th>
-              <th>🌙 Dinner</th>
-              <th>Total</th>
+              <th style="text-align: left;">Member</th>
+              <th style="text-align: center;">☀️ Breakfast</th>
+              <th style="text-align: center;">🍱 Lunch</th>
+              <th style="text-align: center;">🌙 Dinner</th>
+              <th style="text-align: center;">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -403,16 +513,16 @@ const MealsModule = {
       if (total > 0) {
         html += `
           <tr>
-            <td>
+            <td style="text-align: left;">
               <div class="flex items-center gap-2">
                 <div class="avatar avatar-sm" style="background:${DineDesk.users._avatarColor(user.name)};">${Utils.initials(user.name)}</div>
                 ${user.name}
               </div>
             </td>
-            <td>${b > 0 ? `<span class="badge badge-accent">${b}</span>` : '<span style="color:var(--text-tertiary);">—</span>'}</td>
-            <td>${l > 0 ? `<span class="badge badge-accent">${l}</span>` : '<span style="color:var(--text-tertiary);">—</span>'}</td>
-            <td>${d > 0 ? `<span class="badge badge-accent">${d}</span>` : '<span style="color:var(--text-tertiary);">—</span>'}</td>
-            <td><strong>${total}</strong></td>
+            <td style="text-align: center;">${b > 0 ? `<span class="badge badge-accent">${b}</span>` : '<span style="color:var(--text-tertiary);">—</span>'}</td>
+            <td style="text-align: center;">${l > 0 ? `<span class="badge badge-accent">${l}</span>` : '<span style="color:var(--text-tertiary);">—</span>'}</td>
+            <td style="text-align: center;">${d > 0 ? `<span class="badge badge-accent">${d}</span>` : '<span style="color:var(--text-tertiary);">—</span>'}</td>
+            <td style="text-align: center;"><strong>${total}</strong></td>
           </tr>
         `;
       }
@@ -444,121 +554,254 @@ const MealsModule = {
    * Update the Complete Locked Meals select options dynamically
    */
   updateCompleteMealSelect() {
-    const select = document.getElementById('completeMealSelect');
-    if (!select) return;
+    const container = document.getElementById('lockedMealsOptions');
+    if (!container) return;
 
     const s = DineDesk.settings?.getSettings() || {};
     const isToday = this.currentDate === Utils.today();
     const autoEnabled = !!s.autoMealEnabled;
 
     const meals = [
-      { key: 'breakfast', label: 'Breakfast', deadline: s.breakfastDeadline || '04:00' },
-      { key: 'lunch', label: 'Lunch', deadline: s.lunchDeadline || '10:00' },
-      { key: 'dinner', label: 'Dinner', deadline: s.dinnerDeadline || '16:00' }
+      { key: 'breakfast', label: 'Breakfast', deadline: s.breakfastDeadline || '04:00', icon: '☀️' },
+      { key: 'lunch', label: 'Lunch', deadline: s.lunchDeadline || '10:00', icon: '🍱' },
+      { key: 'dinner', label: 'Dinner', deadline: s.dinnerDeadline || '16:00', icon: '🌙' }
     ];
 
     const day = Utils.dayKey(this.currentDate);
     const dayData = this.mealsData[day] || {};
     const completed = dayData.completed || {};
+    const users = DineDesk.users?.users || {};
+    const isManagerMealEnabled = !!s.managerMealEnabled;
 
-    let hasOptions = false;
+    // Filter selectedLockedMeals to only keep valid locked meals
+    const validLockedMeals = [];
     meals.forEach(m => {
-      const option = select.querySelector(`option[value="${m.key}"]`);
-      if (option) {
-        const isLocked = isToday && autoEnabled && Utils.isPastDeadline(m.deadline);
-        const isAlreadyCompleted = !!completed[m.key];
-
-        if (isAlreadyCompleted) {
-          option.disabled = true;
-          option.textContent = `${m.label} (Completed)`;
-        } else if (isLocked) {
-          option.disabled = false;
-          option.textContent = `${m.label} (Locked)`;
-          hasOptions = true;
-        } else {
-          option.disabled = true;
-          option.textContent = `${m.label} (Open)`;
-        }
+      const isLocked = isToday && autoEnabled && Utils.isPastDeadline(m.deadline);
+      const isAlreadyCompleted = !!completed[m.key];
+      if (isLocked && !isAlreadyCompleted) {
+        validLockedMeals.push(m.key);
       }
+    });
+    this.selectedLockedMeals = (this.selectedLockedMeals || []).filter(key => validLockedMeals.includes(key));
+
+    // Clear and build the HTML
+    container.innerHTML = '';
+
+    meals.forEach(m => {
+      const isLocked = isToday && autoEnabled && Utils.isPastDeadline(m.deadline);
+      const isAlreadyCompleted = !!completed[m.key];
+
+      let statusClass = 'status-open';
+      let statusLabel = 'Open';
+      let clickAttr = '';
+
+      if (isAlreadyCompleted) {
+        statusClass = 'status-completed';
+        statusLabel = 'Completed';
+      } else if (isLocked) {
+        statusClass = 'status-locked';
+        statusLabel = 'Locked';
+        const isSelected = this.selectedLockedMeals.includes(m.key);
+        if (isSelected) {
+          statusClass += ' selected';
+        }
+        clickAttr = `onclick="DineDesk.meals.toggleLockedMealSelection('${m.key}')"`;
+      }
+
+      // Calculate meal count for this type
+      let mealCount = 0;
+      if (isAlreadyCompleted) {
+        const mealEntries = dayData[m.key] || {};
+        Object.values(mealEntries).forEach(val => {
+          if (typeof val === 'number') mealCount += val;
+          else if (val === true) mealCount += 1;
+        });
+      } else {
+        Object.entries(users).forEach(([userId, user]) => {
+          if (user.role === 'admin' && !isManagerMealEnabled) {
+            return;
+          }
+          const mealStatus = user.mealStatus || { breakfast: true, lunch: true, dinner: true };
+          const statusVal = mealStatus[m.key];
+          if (statusVal === true || statusVal === undefined) {
+            mealCount += 1;
+          } else if (typeof statusVal === 'number' && statusVal > 0) {
+            mealCount += statusVal;
+          }
+        });
+      }
+
+      const subLabelText = isAlreadyCompleted 
+        ? 'Already Completed' 
+        : (isLocked ? `Locked • Deadline ${m.deadline}` : `Open • Deadline ${m.deadline}`);
+
+      container.innerHTML += `
+        <div class="glass-option-row ${statusClass}" ${clickAttr} title="${m.label} is currently ${statusLabel}">
+          <div class="glass-option-left">
+            <div class="glass-option-circle circle-${m.key}">
+              ${m.icon}
+            </div>
+            <div class="glass-option-info">
+              <span class="glass-option-label">${m.label}</span>
+              <span class="glass-option-sublabel">${subLabelText}</span>
+            </div>
+          </div>
+          <div class="glass-option-count-box">
+            ${mealCount}
+          </div>
+        </div>
+      `;
     });
 
     const btn = document.getElementById('btnCompleteMeal');
     if (btn) {
-      const selectedOption = select.querySelector(`option[value="${select.value}"]`);
-      btn.disabled = !select.value || !selectedOption || selectedOption.disabled;
+      const count = (this.selectedLockedMeals || []).length;
+      btn.disabled = count === 0;
+      const btnSpan = btn.querySelector('span');
+      if (btnSpan) {
+        btnSpan.textContent = count > 0 ? `Complete Selected (${count})` : 'Complete Selected';
+      }
     }
+  },
+
+  /**
+   * Toggle a locked meal option selection
+   */
+  toggleLockedMealSelection(mealKey) {
+    const index = this.selectedLockedMeals.indexOf(mealKey);
+    if (index > -1) {
+      this.selectedLockedMeals.splice(index, 1);
+    } else {
+      this.selectedLockedMeals.push(mealKey);
+    }
+    this.updateCompleteMealSelect();
   },
 
   /**
    * Complete all locked meals for the day using members' current mealStatus
    */
   async completeLockedMeal() {
-    const select = document.getElementById('completeMealSelect');
-    if (!select || !select.value) return;
+    if (!this.selectedLockedMeals || this.selectedLockedMeals.length === 0) return;
 
-    const mealType = select.value;
     const btn = document.getElementById('btnCompleteMeal');
-    if (btn) btn.disabled = true;
+    let btnHtmlBackup = '';
+    if (btn) {
+      btnHtmlBackup = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `
+        <svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: var(--space-1);">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" style="opacity: 0.25; fill: none;"></circle>
+          <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" style="opacity: 0.75;"></path>
+        </svg>
+        <span>Completing...</span>
+      `;
+    }
 
     try {
       const month = this.currentDate.substring(0, 7);
       const day = Utils.dayKey(this.currentDate);
       const users = DineDesk.users.users;
       const updates = {};
-
       const isManagerMealEnabled = !!(DineDesk.settings?.getSettings()?.managerMealEnabled);
 
-      Object.entries(users).forEach(([userId, user]) => {
-        // Skip manager if manager meals are disabled
-        if (user.role === 'admin' && !isManagerMealEnabled) {
-          return;
-        }
+      const oldMealsBackup = {};
 
-        const mealStatus = user.mealStatus || { breakfast: true, lunch: true, dinner: true };
-        const statusVal = mealStatus[mealType];
+      // Perform updates for each selected meal type in one batch
+      for (const mealType of this.selectedLockedMeals) {
+        const dayMeals = { ...(this.mealsData[day]?.[mealType] || {}) };
+        oldMealsBackup[mealType] = dayMeals;
 
-        let count = 0;
-        if (statusVal === true || statusVal === undefined) {
-          count = 1;
-        } else if (typeof statusVal === 'number' && statusVal > 0) {
-          count = statusVal;
-        }
+        Object.entries(users).forEach(([userId, user]) => {
+          if (user.role === 'admin' && !isManagerMealEnabled) {
+            return;
+          }
 
-        if (count > 0) {
-          updates[`dinings/${this.diningId}/meals/${month}/${day}/${mealType}/${userId}`] = count;
-        } else {
-          updates[`dinings/${this.diningId}/meals/${month}/${day}/${mealType}/${userId}`] = null;
-        }
-      });
+          const mealStatus = user.mealStatus || { breakfast: true, lunch: true, dinner: true };
+          const statusVal = mealStatus[mealType];
 
-      // Mark this meal type as completed in the database
-      updates[`dinings/${this.diningId}/meals/${month}/${day}/completed/${mealType}`] = true;
+          let count = 0;
+          if (statusVal === true || statusVal === undefined) {
+            count = 1;
+          } else if (typeof statusVal === 'number' && statusVal > 0) {
+            count = statusVal;
+          }
+
+          if (count > 0) {
+            updates[`dinings/${this.diningId}/meals/${month}/${day}/${mealType}/${userId}`] = count;
+          } else {
+            updates[`dinings/${this.diningId}/meals/${month}/${day}/${mealType}/${userId}`] = null;
+          }
+        });
+
+        // Mark this meal type as completed in the database
+        updates[`dinings/${this.diningId}/meals/${month}/${day}/completed/${mealType}`] = true;
+      }
 
       await db.ref().update(updates);
 
       // Recalculate totals
       await this._recalculateTotals();
 
-      Notifications.toast('success', 'Meal Completed', `${mealType.charAt(0).toUpperCase() + mealType.slice(1)} meals have been completed for today.`);
+      // Log notifications and activity updates for each completed meal type
+      for (const mealType of this.selectedLockedMeals) {
+        const dayMeals = oldMealsBackup[mealType] || {};
+        const capitalizedMeal = mealType.charAt(0).toUpperCase() + mealType.slice(1);
 
-      await Notifications.create(
-        this.diningId,
-        'Meal Logged',
-        `${mealType.charAt(0).toUpperCase() + mealType.slice(1)} meals have been completed by manager for ${Utils.formatDate(this.currentDate)}.`,
-        'all',
-        'meal'
-      );
-      await Notifications.log(this.diningId, 'meal_completed', `Completed ${mealType} meals for ${this.currentDate}`, DineDesk.state.userId);
+        Notifications.toast('success', 'Meal Completed', `${capitalizedMeal} meals completed.`);
 
-      // Reset selection and refresh UI
-      select.value = '';
+        await Notifications.create(
+          this.diningId,
+          'Meal Logged',
+          `${capitalizedMeal} meals have been completed by manager for ${Utils.formatDate(this.currentDate)}.`,
+          'all',
+          'meal'
+        );
+        await Notifications.log(this.diningId, 'meal_completed', `Completed ${capitalizedMeal} meals for ${this.currentDate}`, DineDesk.state.userId);
+
+        // Log individual meal updates for users whose meal counts changed
+        for (const [userId, user] of Object.entries(users)) {
+          if (user.role === 'admin' && !isManagerMealEnabled) {
+            continue;
+          }
+
+          const oldCount = dayMeals[userId] !== undefined ? dayMeals[userId] : 0;
+          const mealStatus = user.mealStatus || { breakfast: true, lunch: true, dinner: true };
+          const statusVal = mealStatus[mealType];
+
+          let newCount = 0;
+          if (statusVal === true || statusVal === undefined) {
+            newCount = 1;
+          } else if (typeof statusVal === 'number' && statusVal > 0) {
+            newCount = statusVal;
+          }
+
+          if (oldCount !== newCount) {
+            const mealLabel = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+            let detail = newCount === 0 ? `${mealLabel} removed` : `${newCount} ${mealLabel} added`;
+            await Notifications.log(
+              this.diningId,
+              'meal_updated',
+              detail,
+              DineDesk.state.userId,
+              userId,
+              this.selectedLockedMeals.length === 1
+            );
+          }
+        }
+      }
+
+      // Clear selection
+      this.selectedLockedMeals = [];
       this.updateCompleteMealSelect();
 
     } catch (error) {
-      console.error('Error completing meal:', error);
-      Notifications.toast('error', 'Error', 'Failed to complete locked meal.');
+      console.error('Error completing meals:', error);
+      Notifications.toast('error', 'Error', 'Failed to complete locked meals.');
     } finally {
-      if (btn) btn.disabled = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = btnHtmlBackup;
+      }
     }
   }
 };

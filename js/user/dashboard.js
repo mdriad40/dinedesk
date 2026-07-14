@@ -10,15 +10,24 @@ const UserDashboard = {
   monthlyMeals: 0,
   monthlyBazar: 0,
 
-  /**
-   * Initialize user dashboard
-   */
   init(diningId, userId) {
     this.diningId = diningId;
     this.userId = userId;
 
+    // Reset/initialize properties
+    this.userLogsData = [];
+    this.userDepositsData = [];
+    this.adminLogsData = [];
+
+    // Clean up previous listeners if any
+    if (this._userRef) this._userRef.off();
+    if (this._settingsRef) this._settingsRef.off();
+    if (this._logsRef) this._logsRef.off();
+    if (this._adminLogsRef) this._adminLogsRef.off();
+
     // Listen to user data
-    db.ref(`dinings/${diningId}/users/${userId}`).on('value', (snap) => {
+    this._userRef = db.ref(`dinings/${diningId}/users/${userId}`);
+    this._userRef.on('value', (snap) => {
       this.userData = snap.val();
       this.renderStats();
       this.renderMealToggles();
@@ -26,11 +35,34 @@ const UserDashboard = {
     });
 
     // Listen to settings for deadlines
-    db.ref(`dinings/${diningId}/settings`).on('value', (snap) => {
+    this._settingsRef = db.ref(`dinings/${diningId}/settings`);
+    this._settingsRef.on('value', (snap) => {
       this.settings = snap.val() || {};
       this.renderMealToggles();
       this.updateMyMealVisibility();
     });
+
+    const role = DineDesk.state.role;
+    const isMember = role !== 'admin';
+
+    if (isMember) {
+      // Listen to user-specific logs
+      this._logsRef = db.ref(`dinings/${diningId}/users/${userId}/logs`);
+      this._logsRef.on('value', (snap) => {
+        this.userLogsData = [];
+        snap.forEach(child => { this.userLogsData.push(child.val()); });
+        this.renderRecentActivity(diningId);
+      });
+    } else {
+      // Admin: Listen to all dining logs
+      this._adminLogsRef = db.ref(`dinings/${diningId}/logs`);
+      this._adminLogsRef.on('value', (snap) => {
+        this.adminLogsData = [];
+        snap.forEach(child => { this.adminLogsData.push(child.val()); });
+        this.adminLogsData.reverse();
+        this.renderRecentActivity(diningId);
+      });
+    }
 
     // Listen to current-month deposits and meals for this user
     this._listenMonthlyData(diningId, userId);
@@ -45,34 +77,42 @@ const UserDashboard = {
   _listenMonthlyData(diningId, userId) {
     const currentMonth = Utils.currentMonth();
 
-    // Deposits this month for this user
-    db.ref(`dinings/${diningId}/deposits`)
-      .orderByChild('userId').equalTo(userId)
-      .on('value', (snap) => {
-        let depositTotal = 0;
-        let otherCostTotal = 0;
-        let deductionTotal = 0;
-        snap.forEach(child => {
-          const d = child.val();
-          if (d.date && d.date.startsWith(currentMonth)) {
-            const amt = Math.abs(Utils.num(d.amount));
-            if (d.type === 'deposit') {
-              depositTotal += amt;
-            } else if (d.type === 'other_costing') {
-              otherCostTotal += amt;
-            } else if (d.type === 'deduction') {
-              deductionTotal += amt;
-            }
+    // Clean up previous monthly listeners
+    if (this._depositsRef) this._depositsRef.off();
+    if (this._bazarRef) this._bazarRef.off();
+    if (this._mealsRef) this._mealsRef.off();
+
+    // Deposits this month for this user (and all deposits for recent activity)
+    this._depositsRef = db.ref(`dinings/${diningId}/deposits`).orderByChild('userId').equalTo(userId);
+    this._depositsRef.on('value', (snap) => {
+      this.userDepositsData = [];
+      let depositTotal = 0;
+      let otherCostTotal = 0;
+      let deductionTotal = 0;
+      snap.forEach(child => {
+        const d = child.val();
+        this.userDepositsData.push(d);
+        if (d.date && d.date.startsWith(currentMonth)) {
+          const amt = Math.abs(Utils.num(d.amount));
+          if (d.type === 'deposit') {
+            depositTotal += amt;
+          } else if (d.type === 'other_costing') {
+            otherCostTotal += amt;
+          } else if (d.type === 'deduction') {
+            deductionTotal += amt;
           }
-        });
-        this.monthlyDeposit = depositTotal;
-        this.monthlyOtherCosting = otherCostTotal;
-        this.monthlyDeduction = deductionTotal;
-        this.renderStats();
+        }
       });
+      this.monthlyDeposit = depositTotal;
+      this.monthlyOtherCosting = otherCostTotal;
+      this.monthlyDeduction = deductionTotal;
+      this.renderStats();
+      this.renderRecentActivity(diningId);
+    });
 
     // Bazar this month (total bazar spend)
-    db.ref(`dinings/${diningId}/bazar`).on('value', (snap) => {
+    this._bazarRef = db.ref(`dinings/${diningId}/bazar`);
+    this._bazarRef.on('value', (snap) => {
       let bazarTotal = 0;
       snap.forEach(child => {
         const b = child.val();
@@ -85,28 +125,28 @@ const UserDashboard = {
     });
 
     // Meals this month for this user
-    db.ref(`dinings/${diningId}/meals/${currentMonth}`)
-      .on('value', (snap) => {
-        const monthData = snap.val() || {};
-        this.monthMealsData = monthData;
-        let total = 0;
-        let breakdown = { breakfast: 0, lunch: 0, dinner: 0 };
-        Object.values(monthData).forEach(dayData => {
-          Object.entries(dayData).forEach(([type, typeData]) => {
-            if (typeof typeData === 'object' && typeData[userId] !== undefined) {
-              const count = parseFloat(typeData[userId]) || 0;
-              total += count;
-              if (breakdown[type] !== undefined) {
-                breakdown[type] += count;
-              }
+    this._mealsRef = db.ref(`dinings/${diningId}/meals/${currentMonth}`);
+    this._mealsRef.on('value', (snap) => {
+      const monthData = snap.val() || {};
+      this.monthMealsData = monthData;
+      let total = 0;
+      let breakdown = { breakfast: 0, lunch: 0, dinner: 0 };
+      Object.values(monthData).forEach(dayData => {
+        Object.entries(dayData).forEach(([type, typeData]) => {
+          if (typeof typeData === 'object' && typeData[userId] !== undefined) {
+            const count = parseFloat(typeData[userId]) || 0;
+            total += count;
+            if (breakdown[type] !== undefined) {
+              breakdown[type] += count;
             }
-          });
+          }
         });
-        this.monthlyMeals = total;
-        this.monthlyMealsBreakdown = breakdown;
-        this.renderStats();
-        this.renderMealToggles();
       });
+      this.monthlyMeals = total;
+      this.monthlyMealsBreakdown = breakdown;
+      this.renderStats();
+      this.renderMealToggles();
+    });
   },
 
   /**
@@ -503,8 +543,11 @@ const UserDashboard = {
     const finalLogs = [];
     const mealGroups = {};
 
+    const role = DineDesk.state.role;
+    const isAdmin = role === 'admin';
+
     logs.forEach(log => {
-      if (log.action === 'meal_updated' || log.action === 'meals_updated') {
+      if ((log.action === 'meal_updated' || log.action === 'meals_updated') && !log.isSingle) {
         const ts = (typeof log.timestamp === 'number') ? log.timestamp : Date.now();
         const sanitizedLog = { ...log, timestamp: ts };
         const dateObj = new Date(ts);
@@ -524,21 +567,43 @@ const UserDashboard = {
       items.sort((a, b) => b.timestamp - a.timestamp);
       const latestTimestamp = items[0].timestamp;
 
-      // Deduplicate: keep only the LATEST log per meal type per day
-      const seenTypes = new Set();
-      const deduped = items.filter(it => {
-        const normalized = this._normalizeMealDetail(it.details);
-        const mealType = this._extractMealType(normalized || it.details || '');
-        const key = mealType || normalized; // fallback to full detail if type can't be extracted
-        if (seenTypes.has(key)) return false;
-        seenTypes.add(key);
-        return true;
-      });
+      let combinedDetails = '';
+      if (isAdmin) {
+        // For admin/manager: group and deduplicate by (mealType + '_' + targetUserId)
+        const seenKeys = new Set();
+        const deduped = items.filter(it => {
+          const normalized = this._normalizeMealDetail(it.details);
+          const mealType = this._extractMealType(normalized || it.details || '');
+          const targetId = it.targetUserId || '';
+          const key = (mealType || normalized) + '_' + targetId;
+          if (seenKeys.has(key)) return false;
+          seenKeys.add(key);
+          return true;
+        });
 
-      // Build bullet list from deduplicated items
-      const combinedDetails = deduped
-        .map(it => `• ${this._normalizeMealDetail(it.details)}`)
-        .join('<br>');
+        combinedDetails = deduped
+          .map(it => {
+            const userName = it.targetUserId ? (UsersModule.users?.[it.targetUserId]?.name || 'Member') : '';
+            const prefix = userName ? `${userName}: ` : '';
+            return `• ${prefix}${this._normalizeMealDetail(it.details)}`;
+          })
+          .join('<br>');
+      } else {
+        // For regular user/member: deduplicate by mealType/normalized detail only
+        const seenTypes = new Set();
+        const deduped = items.filter(it => {
+          const normalized = this._normalizeMealDetail(it.details);
+          const mealType = this._extractMealType(normalized || it.details || '');
+          const key = mealType || normalized; // fallback to full detail if type can't be extracted
+          if (seenTypes.has(key)) return false;
+          seenTypes.add(key);
+          return true;
+        });
+
+        combinedDetails = deduped
+          .map(it => `• ${this._normalizeMealDetail(it.details)}`)
+          .join('<br>');
+      }
 
       finalLogs.push({
         action: 'meals_updated_group',
@@ -563,269 +628,86 @@ const UserDashboard = {
     return null;
   },
 
-  /**
-   * Render recent activity from logs
-   */
   renderRecentActivity(diningId) {
     const container = document.getElementById('recentActivity');
     if (!container) return;
 
     const role = DineDesk.state.role;
     const isMember = role !== 'admin';
-    const currentUserId = this.userId;
 
     if (isMember) {
-      let userLogsData = [];
-      let userDepositsData = [];
+      const combined = [];
 
-      const renderCombined = () => {
-        const combined = [];
-
-        // Format user logs (only user-specific activities, filtering out duplicates and external join/add events)
-        userLogsData.forEach(l => {
-          if (l.action === 'user_updated' || l.action === 'security_updated' || l.action === 'meal_toggled') {
-            combined.push({
-              action: l.action,
-              details: l.details,
-              timestamp: l.timestamp,
-              performedBy: l.performedBy
-            });
-          }
-        });
-
-        // Format user deposits/deductions
-        userDepositsData.forEach(d => {
-          const isDeposit = d.type === 'deposit';
-          const isOtherCosting = d.type === 'other_costing';
+      // Format user logs (only user-specific activities, filtering out duplicates and external join/add events)
+      const userLogs = this.userLogsData || [];
+      userLogs.forEach(l => {
+        if (l.action === 'user_updated' || l.action === 'security_updated' || l.action === 'meal_toggled' || l.action === 'meal_updated') {
           combined.push({
-            action: isDeposit ? 'deposit_added' : (isOtherCosting ? 'other_costing_added' : 'deduction_added'),
-            details: isDeposit
-              ? `Deposit ৳${d.amount} (${d.note || 'Regular Deposit'})`
-              : (isOtherCosting
-                ? `Deducted ৳${Math.abs(d.amount)} for Other Costing: ${d.note || 'No description'}`
-                : `Deducted ৳${Math.abs(d.amount)}: ${d.note || 'No reason specified'}`),
-            timestamp: d.timestamp || (d.date ? new Date(d.date).getTime() : 0),
-            performedBy: 'manager'
+            action: l.action,
+            details: l.details,
+            timestamp: l.timestamp,
+            performedBy: l.performedBy,
+            isSingle: l.isSingle
           });
+        }
+      });
+
+      // Format user deposits/deductions
+      const userDeposits = this.userDepositsData || [];
+      userDeposits.forEach(d => {
+        const isDeposit = d.type === 'deposit';
+        const isOtherCosting = d.type === 'other_costing';
+        combined.push({
+          action: isDeposit ? 'deposit_added' : (isOtherCosting ? 'other_costing_added' : 'deduction_added'),
+          details: isDeposit
+            ? `Deposit ৳${d.amount} (${d.note || 'Regular Deposit'})`
+            : (isOtherCosting
+              ? `Deducted ৳${Math.abs(d.amount)} for Other Costing: ${d.note || 'No description'}`
+              : `Deducted ৳${Math.abs(d.amount)}: ${d.note || 'No reason specified'}`),
+          timestamp: d.timestamp || (d.date ? new Date(d.date).getTime() : 0),
+          performedBy: 'manager'
         });
-
-        // --- Split: toggle logs go to separate section ---
-        const toggleLogs = combined
-          .filter(l => l.action === 'meal_toggled')
-          .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-        const nonToggleLogs = combined.filter(l => l.action !== 'meal_toggled');
-
-        // Group meal add/update logs by calendar day
-        const groupedLogs = this._groupMealLogs(nonToggleLogs);
-        const displayLogs = groupedLogs.slice(0, 10);
-
-        // ---- Render Recent Activity (meals + deposits) ----
-        if (displayLogs.length === 0) {
-          container.innerHTML = `
-            <div class="empty-state" style="padding:var(--space-6);">
-              <div class="empty-state-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              </div>
-              <h3>No Recent Activity</h3>
-              <p>Activities will show up here as they happen.</p>
-            </div>
-          `;
-        } else {
-          let html = displayLogs.map(log => {
-            const dotClass = log.action?.includes('deposit') ? 'accent'
-              : log.action?.includes('deduction') ? 'danger'
-                : log.action?.includes('other_costing') ? 'danger'
-                  : log.action?.includes('meal') ? 'warning'
-                    : log.action?.includes('bazar') ? ''
-                      : log.action?.includes('delete') ? 'danger'
-                        : '';
-
-            let title;
-            if (log.action === 'meals_updated_group') title = 'Meals';
-            else if (log.action === 'deposit_added') title = 'Deposit Added';
-            else if (log.action === 'deduction_added') title = 'Deduction';
-            else if (log.action === 'other_costing_added') title = 'Deduction : Other Costing';
-            else if (log.action === 'bazar_added') title = 'Bazar Added';
-            else title = log.action?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Activity';
-
-            return `
-              <div class="timeline-item">
-                <div class="timeline-dot ${dotClass}"></div>
-                <div class="timeline-content">
-                  <div class="timeline-date">${Utils.timeAgo(log.timestamp)}</div>
-                  <div class="timeline-title">${title}</div>
-                  ${log.details ? `<div class="timeline-desc">${log.details}</div>` : ''}
-                </div>
-              </div>
-            `;
-          }).join('');
-
-          html += this._setupTimelineCollapse(container, displayLogs.length);
-          container.innerHTML = html;
-        }
-
-        // ---- Render Meal Toggle History (separate beautiful section) ----
-        const toggleContainer = document.getElementById('mealToggleHistory');
-        const toggleSection = document.getElementById('mealToggleSection');
-        if (toggleContainer) {
-          // Only show section for members
-          if (toggleSection) toggleSection.style.display = 'block';
-
-          if (toggleLogs.length === 0) {
-            toggleContainer.innerHTML = `
-              <div class="empty-state" style="padding:var(--space-6);">
-                <div class="empty-state-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                  </svg>
-                </div>
-                <h3>No Toggle History</h3>
-                <p>Your meal on/off history will appear here.</p>
-              </div>
-            `;
-          } else {
-            let html = toggleLogs.map(log => {
-              const detail = this._normalizeMealDetail(log.details || '');
-              const isOn = !(
-                detail.toUpperCase().includes(' OFF') ||
-                detail.toUpperCase().includes(' REMOVED') ||
-                detail.toUpperCase().includes(' TO 0') ||
-                (log.details || '').toUpperCase().includes(' OFF') ||
-                (log.details || '').toUpperCase().includes(' REMOVED') ||
-                (log.details || '').toUpperCase().includes(' TO 0')
-              );
-              const mealType = this._extractMealType(detail || log.details || '') || 'Meal';
-
-              // Parse meal count
-              let count = 1;
-              if (!isOn) {
-                count = 0;
-              } else {
-                const plusMatch = detail.match(/ON\s*\(\+(\d+)\)/i);
-                if (plusMatch) {
-                  count = parseInt(plusMatch[1], 10) + 1;
-                } else {
-                  const match = detail.match(/ON\s*\((\d+)\)/i) ||
-                    (log.details || '').match(/(?:updated to|set to|ON\s*\(|count\s+is\s+)(\d+)/i) ||
-                    detail.match(/^(\d+)\s+/);
-                  if (match) {
-                    count = parseInt(match[1], 10);
-                  } else {
-                    const legacyMatch = (log.details || '').match(/updated from \d+ to (\d+)/i);
-                    if (legacyMatch) {
-                      count = parseInt(legacyMatch[1], 10);
-                    }
-                  }
-                }
-              }
-
-              // Format full date + time
-              const ts = log.timestamp;
-              let dateTimeStr = '';
-              if (ts && typeof ts === 'number') {
-                const d = new Date(ts);
-                const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                dateTimeStr = `${dateStr} · ${timeStr}`;
-              }
-
-              const pillColor = isOn
-                ? 'background:var(--primary-100);color:var(--primary-700);border:1px solid var(--primary-200);'
-                : 'background:#FEE2E2;color:#B91C1C;border:1px solid #FECACA;';
-
-              const iconPath = isOn
-                ? '<path d="M5 12l5 5L20 7"/>'
-                : '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
-
-              const pillText = count > 1 ? `ON (+${count - 1})` : (isOn ? 'ON' : 'OFF');
-
-              return `
-                <div class="meal-toggle-history-item">
-                  <div class="mth-icon-wrap" style="${isOn ? 'background:var(--primary-50);color:var(--primary-600);' : 'background:#FEF2F2;color:#DC2626;'}">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
-                  </div>
-                  <div class="mth-info">
-                    <div class="mth-meal-type">${mealType}</div>
-                    <div class="mth-datetime">${dateTimeStr}</div>
-                  </div>
-                  <span class="mth-pill" style="${pillColor}">${pillText}</span>
-                </div>
-              `;
-            }).join('');
-
-            html += this._setupToggleHistoryCollapse(toggleContainer, toggleLogs.length);
-            toggleContainer.innerHTML = html;
-          }
-        }
-      };
-
-      // Listen to user-specific logs
-      db.ref(`dinings/${diningId}/users/${currentUserId}/logs`).on('value', (snap) => {
-        userLogsData = [];
-        snap.forEach(child => { userLogsData.push(child.val()); });
-        renderCombined();
       });
 
-      // Listen to user deposits/deductions
-      db.ref(`dinings/${diningId}/deposits`).orderByChild('userId').equalTo(currentUserId).on('value', (snap) => {
-        userDepositsData = [];
-        snap.forEach(child => { userDepositsData.push(child.val()); });
-        renderCombined();
-      });
+      // --- Split: toggle logs go to separate section ---
+      const toggleLogs = combined
+        .filter(l => l.action === 'meal_toggled')
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-    } else {
-      // Admin/Manager: hide the Meal Toggle History section (admin doesn't toggle meals)
-      const toggleSection = document.getElementById('mealToggleSection');
-      if (toggleSection) toggleSection.style.display = 'none';
+      const nonToggleLogs = combined.filter(l => l.action !== 'meal_toggled');
 
-      // Admin/Manager: show all logs
-      db.ref(`dinings/${diningId}/logs`).orderByChild('timestamp').limitToLast(20).on('value', (snap) => {
-        const logs = [];
-        snap.forEach(child => logs.push(child.val()));
-        logs.reverse();
+      // Group meal add/update logs by calendar day
+      const groupedLogs = this._groupMealLogs(nonToggleLogs);
+      const displayLogs = groupedLogs.slice(0, 10);
 
-        // Group meal logs by calendar day for the manager as well
-        const groupedLogs = this._groupMealLogs(logs);
-
-        // Limit to 10
-        const displayLogs = groupedLogs.slice(0, 10);
-
-        if (displayLogs.length === 0) {
-          container.innerHTML = `
-            <div class="empty-state" style="padding:var(--space-6);">
-              <div class="empty-state-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              </div>
-              <h3>No Recent Activity</h3>
-              <p>Activities will show up here as they happen.</p>
+      // ---- Render Recent Activity (meals + deposits) ----
+      if (displayLogs.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding:var(--space-6);">
+            <div class="empty-state-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-          `;
-          return;
-        }
-
+            <h3>No Recent Activity</h3>
+            <p>Activities will show up here as they happen.</p>
+          </div>
+        `;
+      } else {
         let html = displayLogs.map(log => {
           const dotClass = log.action?.includes('deposit') ? 'accent'
             : log.action?.includes('deduction') ? 'danger'
-              : log.action?.includes('meal') ? 'warning'
-                : log.action?.includes('bazar') ? ''
-                  : log.action?.includes('delete') ? 'danger'
-                    : '';
+              : log.action?.includes('other_costing') ? 'danger'
+                : log.action?.includes('meal') ? 'warning'
+                  : log.action?.includes('bazar') ? ''
+                    : log.action?.includes('delete') ? 'danger'
+                      : '';
 
           let title;
-          if (log.action === 'meals_updated_group') {
-            title = 'Meals';
-          } else if (log.action === 'deposit_added') {
-            title = 'Deposit Added';
-          } else if (log.action === 'deduction_added') {
-            title = 'Deduction';
-          } else if (log.action === 'bazar_added') {
-            title = 'Bazar Added';
-          } else if (log.action === 'meal_toggled') {
-            title = 'Meal Status';
-          } else {
-            title = log.action?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Activity';
-          }
+          if (log.action === 'meals_updated_group') title = 'Meals';
+          else if (log.action === 'deposit_added') title = 'Deposit Added';
+          else if (log.action === 'deduction_added') title = 'Deduction';
+          else if (log.action === 'other_costing_added') title = 'Deduction : Other Costing';
+          else if (log.action === 'bazar_added') title = 'Bazar Added';
+          else title = log.action?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Activity';
 
           return `
             <div class="timeline-item">
@@ -841,7 +723,169 @@ const UserDashboard = {
 
         html += this._setupTimelineCollapse(container, displayLogs.length);
         container.innerHTML = html;
-      });
+      }
+
+      // ---- Render Meal Toggle History (separate beautiful section) ----
+      const toggleContainer = document.getElementById('mealToggleHistory');
+      const toggleSection = document.getElementById('mealToggleSection');
+      if (toggleContainer) {
+        // Only show section for members
+        if (toggleSection) toggleSection.style.display = 'block';
+
+        if (toggleLogs.length === 0) {
+          toggleContainer.innerHTML = `
+            <div class="empty-state" style="padding:var(--space-6);">
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <h3>No Toggle History</h3>
+              <p>Your meal on/off history will appear here.</p>
+            </div>
+          `;
+        } else {
+          let html = toggleLogs.map(log => {
+            const detail = this._normalizeMealDetail(log.details || '');
+            const isOn = !(
+              detail.toUpperCase().includes(' OFF') ||
+              detail.toUpperCase().includes(' REMOVED') ||
+              detail.toUpperCase().includes(' TO 0') ||
+              (log.details || '').toUpperCase().includes(' OFF') ||
+              (log.details || '').toUpperCase().includes(' REMOVED') ||
+              (log.details || '').toUpperCase().includes(' TO 0')
+            );
+            const mealType = this._extractMealType(detail || log.details || '') || 'Meal';
+
+            // Parse meal count
+            let count = 1;
+            if (!isOn) {
+              count = 0;
+            } else {
+              const plusMatch = detail.match(/ON\s*\(\+(\d+)\)/i);
+              if (plusMatch) {
+                count = parseInt(plusMatch[1], 10) + 1;
+              } else {
+                const match = detail.match(/ON\s*\((\d+)\)/i) ||
+                  (log.details || '').match(/(?:updated to|set to|ON\s*\(|count\s+is\s+)(\d+)/i) ||
+                  detail.match(/^(\d+)\s+/);
+                if (match) {
+                  count = parseInt(match[1], 10);
+                } else {
+                  const legacyMatch = (log.details || '').match(/updated from \d+ to (\d+)/i);
+                  if (legacyMatch) {
+                    count = parseInt(legacyMatch[1], 10);
+                  }
+                }
+              }
+            }
+
+            // Format full date + time
+            const ts = log.timestamp;
+            let dateTimeStr = '';
+            if (ts && typeof ts === 'number') {
+              const d = new Date(ts);
+              const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              dateTimeStr = `${dateStr} · ${timeStr}`;
+            }
+
+            const pillColor = isOn
+              ? 'background:var(--primary-100);color:var(--primary-700);border:1px solid var(--primary-200);'
+              : 'background:#FEE2E2;color:#B91C1C;border:1px solid #FECACA;';
+
+            const iconPath = isOn
+              ? '<path d="M5 12l5 5L20 7"/>'
+              : '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
+
+            const pillText = count > 1 ? `ON (+${count - 1})` : (isOn ? 'ON' : 'OFF');
+
+            return `
+              <div class="meal-toggle-history-item">
+                <div class="mth-icon-wrap" style="${isOn ? 'background:var(--primary-50);color:var(--primary-600);' : 'background:#FEF2F2;color:#DC2626;'}">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
+                </div>
+                <div class="mth-info">
+                  <div class="mth-meal-type">${mealType}</div>
+                  <div class="mth-datetime">${dateTimeStr}</div>
+                </div>
+                <span class="mth-pill" style="${pillColor}">${pillText}</span>
+              </div>
+            `;
+          }).join('');
+
+          html += this._setupToggleHistoryCollapse(toggleContainer, toggleLogs.length);
+          toggleContainer.innerHTML = html;
+        }
+      }
+
+    } else {
+      // Admin/Manager: hide the Meal Toggle History section (admin doesn't toggle meals)
+      const toggleSection = document.getElementById('mealToggleSection');
+      if (toggleSection) toggleSection.style.display = 'none';
+
+      const logs = this.adminLogsData || [];
+      const groupedLogs = this._groupMealLogs(logs);
+      const displayLogs = groupedLogs.slice(0, 10);
+
+      if (displayLogs.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding:var(--space-6);">
+            <div class="empty-state-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <h3>No Recent Activity</h3>
+            <p>Activities will show up here as they happen.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = displayLogs.map(log => {
+        const dotClass = log.action?.includes('deposit') ? 'accent'
+          : log.action?.includes('deduction') ? 'danger'
+            : log.action?.includes('meal') ? 'warning'
+              : log.action?.includes('bazar') ? ''
+                : log.action?.includes('delete') ? 'danger'
+                  : '';
+
+        let title;
+        if (log.action === 'meals_updated_group') {
+          title = 'Meals';
+        } else if (log.action === 'deposit_added') {
+          title = 'Deposit Added';
+        } else if (log.action === 'deduction_added') {
+          title = 'Deduction';
+        } else if (log.action === 'bazar_added') {
+          title = 'Bazar Added';
+        } else if (log.action === 'meal_toggled') {
+          title = 'Meal Status';
+        } else {
+          title = log.action?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Activity';
+        }
+
+        let desc = log.details || '';
+        if (log.targetUserId && log.action !== 'meals_updated_group') {
+          const userName = UsersModule.users?.[log.targetUserId]?.name || 'Member';
+          if (desc && !desc.includes(userName)) {
+            desc = `${userName}: ${desc}`;
+          }
+        }
+
+        return `
+          <div class="timeline-item">
+            <div class="timeline-dot ${dotClass}"></div>
+            <div class="timeline-content">
+              <div class="timeline-date">${Utils.timeAgo(log.timestamp)}</div>
+              <div class="timeline-title">${title}</div>
+              ${desc ? `<div class="timeline-desc">${desc}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      html += this._setupTimelineCollapse(container, displayLogs.length);
+      container.innerHTML = html;
     }
   },
 
@@ -1019,6 +1063,7 @@ const UserDashboard = {
     this.renderStats();
     this.renderMealToggles();
     this.updateMyMealVisibility();
+    this.renderRecentActivity(this.diningId);
 
     const role = DineDesk.state.role;
     const userContent = document.getElementById('userDashboardContent');

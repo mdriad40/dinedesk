@@ -496,9 +496,11 @@
 .overview-table-card {
   background: var(--bg-primary);
   border-radius: var(--radius-xl);
-  box-shadow: 0 4px 20px rgba(5, 150, 105, 0.05); /* Soft green-tinted shadow */
+  box-shadow: 0 4px 20px rgba(5, 150, 105, 0.05);
+  /* Soft green-tinted shadow */
   overflow: hidden;
-  border: none; /* No outer border! */
+  border: none;
+  /* No outer border! */
 }
 
 .overview-table-grid {
@@ -513,7 +515,8 @@
   gap: var(--space-4);
   padding: var(--space-4) var(--space-5);
   background: var(--bg-primary);
-  border-bottom: 1px solid rgba(16, 185, 129, 0.08); /* Soft emerald separator */
+  border-bottom: 1px solid rgba(16, 185, 129, 0.08);
+  /* Soft emerald separator */
 }
 
 /* Vertical divider: left column cells have a right border */
@@ -525,7 +528,8 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  background: rgba(16, 185, 129, 0.05); /* Subtle green tint bg */
+  background: rgba(16, 185, 129, 0.05);
+  /* Subtle green tint bg */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -542,18 +546,22 @@
   color: var(--primary-600);
   background: var(--primary-50);
 }
+
 .overview-table-grid .cell-icon-box.text-accent {
   color: var(--accent-600);
   background: var(--accent-50);
 }
+
 .overview-table-grid .cell-icon-box.text-warning {
   color: var(--warning-600);
   background: var(--warning-50);
 }
+
 .overview-table-grid .cell-icon-box.text-danger {
   color: var(--danger-500);
   background: var(--danger-50);
 }
+
 .overview-table-grid .cell-icon-box.text-orange {
   color: #F97316;
   background: rgba(249, 115, 22, 0.06);
@@ -584,13 +592,16 @@
 /* Full Width Bottom Column (9th Metric) */
 .overview-table-grid .table-cell-full {
   grid-column: span 2;
-  background: linear-gradient(135deg, var(--primary-600), var(--primary-700)); /* Solid professional gradient green */
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  /* Solid professional gradient green */
   padding: var(--space-4.5) var(--space-6);
   display: flex;
   justify-content: center;
   align-items: center;
-  border-bottom-left-radius: var(--radius-xl); /* Rounded corners at the bottom left */
-  border-bottom-right-radius: var(--radius-xl); /* Rounded corners at the bottom right */
+  border-bottom-left-radius: var(--radius-xl);
+  /* Rounded corners at the bottom left */
+  border-bottom-right-radius: var(--radius-xl);
+  /* Rounded corners at the bottom right */
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
@@ -604,7 +615,8 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15); /* Semi-transparent white circle */
+  background: rgba(255, 255, 255, 0.15);
+  /* Semi-transparent white circle */
   color: var(--text-inverse);
   display: flex;
   align-items: center;
@@ -1667,4 +1679,355 @@
   .summary-rate-amount {
     font-size: 18px;
   }
+}
+
+/* ============================================================
+   GLASS PLATE PANEL FOR COMPLETE LOCKED MEALS
+   ============================================================ */
+.glass-plate-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-4);
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px) saturate(145%);
+  -webkit-backdrop-filter: blur(12px) saturate(145%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 8px 32px 0 rgba(4, 120, 87, 0.05);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  min-width: 320px;
+  max-width: 100%;
+  transition: all var(--transition-base);
+}
+
+.glass-plate-panel:hover {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 10px 36px 0 rgba(4, 120, 87, 0.08);
+}
+
+.glass-plate-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: var(--space-2);
+}
+
+.glass-plate-title {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.glass-plate-icon {
+  color: var(--primary-600);
+}
+
+.glass-plate-subtitle {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: var(--weight-medium);
+}
+
+.glass-plate-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+
+@media (min-width: 768px) {
+  .glass-plate-options {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+  }
+}
+
+/* Glass Option Row */
+.glass-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  user-select: none;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+}
+
+/* Left part containing icon and label */
+.glass-option-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Circle Badge for Icon */
+.glass-option-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all var(--transition-base);
+}
+
+/* Label text */
+.glass-option-label {
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+}
+
+/* Sub-text under label (e.g. deadline or status) */
+.glass-option-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.glass-option-sublabel {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-weight: var(--weight-medium);
+}
+
+/* Right side Box (Count/Status Box) */
+.glass-option-count-box {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--weight-bold);
+  font-size: var(--font-sm);
+  transition: all var(--transition-base);
+  color: var(--text-secondary);
+}
+
+/* Open status */
+.glass-option-row.status-open {
+  background: rgba(107, 114, 128, 0.02);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  border-color: rgba(107, 114, 128, 0.08);
+}
+.glass-option-row.status-open .glass-option-label {
+  color: var(--text-tertiary);
+}
+.glass-option-row.status-open .glass-option-circle {
+  background: rgba(107, 114, 128, 0.05);
+  opacity: 0.6;
+}
+.glass-option-row.status-open .glass-option-count-box {
+  background: rgba(107, 114, 128, 0.03);
+  border-color: rgba(107, 114, 128, 0.08);
+  color: var(--text-tertiary);
+}
+
+/* Completed status */
+.glass-option-row.status-completed {
+  background: rgba(16, 185, 129, 0.04);
+  color: var(--primary-700);
+  cursor: not-allowed;
+  border-color: rgba(16, 185, 129, 0.15);
+}
+.glass-option-row.status-completed .glass-option-label {
+  color: var(--primary-800);
+}
+.glass-option-row.status-completed .glass-option-circle {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--primary-700);
+}
+.glass-option-row.status-completed .glass-option-count-box {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+  color: var(--primary-700);
+}
+
+/* Locked status (Interactive) */
+.glass-option-row.status-locked {
+  background: #ffffff;
+  color: var(--text-primary);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+.glass-option-row.status-locked:hover {
+  background: rgba(245, 158, 11, 0.02);
+  border-color: rgba(245, 158, 11, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+/* Specific color variables for meal circles when locked/open */
+.glass-option-row .circle-breakfast {
+  background: #e0f2fe; /* Light blue */
+  color: #0369a1;
+}
+.glass-option-row .circle-lunch {
+  background: #d1fae5; /* Light emerald */
+  color: #047857;
+}
+.glass-option-row .circle-dinner {
+  background: #f3e8ff; /* Light purple */
+  color: #7e22ce;
+}
+
+/* Selected state for Locked meals */
+.glass-option-row.status-locked.selected {
+  background: #f0fdf4; /* Soft green bg matching user's screenshot */
+  border-color: #a7f3d0; /* Soft green border */
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.06);
+}
+.glass-option-row.status-locked.selected:hover {
+  border-color: var(--primary-400);
+}
+.glass-option-row.status-locked.selected .glass-option-label {
+  color: var(--primary-900);
+}
+.glass-option-row.status-locked.selected .glass-option-count-box {
+  background: #ffffff;
+  border-color: #a7f3d0;
+  color: var(--primary-700);
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.04);
+}
+
+.btn-glass-complete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 38px;
+  padding: 0 var(--space-6);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
+  box-shadow: none;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .btn-glass-complete {
+    width: auto;
+    align-self: flex-end;
+  }
+}
+
+.btn-glass-complete:not(:disabled) {
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
+}
+
+.btn-glass-complete:not(:disabled):hover {
+  background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-800) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(5, 150, 105, 0.35);
+}
+
+.btn-glass-complete:disabled {
+  background: rgba(107, 114, 128, 0.08);
+  color: var(--text-tertiary);
+  border: 1px solid rgba(107, 114, 128, 0.1);
+  cursor: not-allowed;
+}
+
+.btn-glass-complete svg.animate-spin {
+  animation: btnSpin 1s linear infinite;
+}
+
+
+@keyframes btnSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Spinner container */
+.number-spinner {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  overflow: hidden;
+  height: 28px;
+}
+
+.number-spinner button {
+  width: 24px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--weight-bold);
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: all var(--transition-base);
+  user-select: none;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+}
+
+.number-spinner button:hover {
+  background: rgba(4, 120, 87, 0.05);
+  color: var(--primary-600);
+}
+
+.number-spinner button:active {
+  background: rgba(4, 120, 87, 0.1);
+}
+
+.number-spinner input {
+  width: 28px;
+  height: 100%;
+  border: none;
+  text-align: center;
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  background: transparent;
+  color: var(--text-primary);
+  padding: 0;
+  margin: 0;
+  -moz-appearance: textfield;
+}
+
+.number-spinner input::-webkit-outer-spin-button,
+.number-spinner input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Bulk Mode toggle switch style overrides */
+#bulkOverrideSwitch .toggle-slider::after {
+  width: 16px;
+  height: 16px;
+  top: 3px;
+  left: 3px;
+}
+#bulkOverrideSwitch input:checked+.toggle-slider::after {
+  transform: translateX(18px);
 }

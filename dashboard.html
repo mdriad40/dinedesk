@@ -259,6 +259,7 @@
             <h3 id="wizardTitle">Setup wizard</h3>
             <span id="wizardStepInfo">Step 1 of 6 · Name</span>
           </div>
+          <div id="joinStepBadge" class="join-step-badge" style="display: none;">1 / 3</div>
         </div>
 
         <!-- Progress Bar -->
@@ -611,25 +612,209 @@
         </div>
 
         <!-- ======== JOIN A MESS PATH ======== -->
-        <div id="step-join" class="wizard-step-content">
-          <h2>Enter your invite code</h2>
-          <p class="description">Your admin makes a unique code for your seat. Each code works only once.</p>
+        <div id="step-join" class="wizard-step-content"
+          style="display:none; flex-direction: column; gap: 1.5rem; width: 100%;">
 
-          <div class="form-group mt-4">
-            <label class="form-label" for="joinMessCodeInput">Invite code</label>
-            <input type="text" id="joinMessCodeInput" class="form-input" placeholder="e.g. DD-XXXXX"
-              style="text-transform: uppercase;">
-            <span class="char-count">Format: DD-XXXXX</span>
+          <!-- Step Progress Tracker -->
+          <div id="joinProgressTracker" class="join-progress-tracker" style="margin-bottom: 0.5rem; width: 100%;">
+            <div class="join-progress-step step-1 active">
+              <div class="step-number">1</div>
+              <span class="step-label">Code</span>
+            </div>
+            <div class="join-progress-line line-1"></div>
+            <div class="join-progress-step step-2">
+              <div class="step-number">2</div>
+              <span class="step-label">Preview</span>
+            </div>
+            <div class="join-progress-line line-2"></div>
+            <div class="join-progress-step step-3">
+              <div class="step-number">3</div>
+              <span class="step-label">Rules</span>
+            </div>
           </div>
 
-          <div id="joinPreviewArea" style="display:none;"></div>
+          <!-- ======== SUBSTEP 1: CODE INPUT ======== -->
+          <div id="join-substep-1" class="join-substep-pane"
+            style="display: flex; flex-direction: column; gap: 1.25rem; width: 100%;">
 
-          <div class="wizard-actions">
-            <button class="btn-onboarding-continue" id="btnVerifyJoinCode"
-              onclick="Onboarding.verifyInviteCode()">Verify invite code</button>
-            <button class="btn-onboarding-continue" id="btnJoinConfirmSubmit" onclick="Onboarding.executeJoin()"
-              style="display:none;">Confirm & Join Mess</button>
+            <!-- Large Key Icon Container -->
+            <div class="join-icon-container">
+              <div class="join-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path
+                    d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="join-step-title-group">
+              <h2 class="join-step-title" style="margin-bottom: 0.25rem;">Enter your invite code</h2>
+              <p class="join-step-description">Your admin makes a unique code for your seat. Enter the code to locate
+                your mess.</p>
+            </div>
+
+            <!-- Instruction Cards Box -->
+            <div class="join-instructions-box">
+              <div class="instruction-row">
+                <div class="inst-circle">1</div>
+                <p class="inst-text">Ask your mess admin for your personal invite code</p>
+              </div>
+              <div class="instruction-row">
+                <div class="inst-circle">2</div>
+                <p class="inst-text">Type the invite code below and click Verify</p>
+              </div>
+              <div class="instruction-row">
+                <div class="inst-circle">3</div>
+                <p class="inst-text">Check your room details, agree to the rules, and join</p>
+              </div>
+            </div>
+
+            <!-- Invite Code Input Field -->
+            <div class="form-group" style="margin-top: 0.5rem; position: relative;">
+              <label class="form-label" for="joinMessCodeInput" style="font-weight: 600;">Invite code</label>
+              <div class="join-input-wrapper">
+                <div class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path
+                      d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                  </svg>
+                </div>
+                <input type="text" id="joinMessCodeInput" class="form-input join-input" placeholder="e.g. DD-XXXXX"
+                  style="text-transform: uppercase;" oninput="Onboarding.handleCodeInput(this.value)">
+              </div>
+              <span class="char-count"
+                style="margin-top: 0.25rem; font-size: 0.75rem; color: var(--text-tertiary);">Invite code &middot; from
+                your mess admin</span>
+            </div>
+
+            <!-- Beautiful Error Display -->
+            <div id="joinCodeError" class="join-error-box" style="display: none;">
+              <div class="error-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <div class="error-message-text" id="joinCodeErrorMsg">Invalid code. Please check and try again.</div>
+            </div>
+
+            <div class="wizard-actions" style="margin-top: 1rem;">
+              <button class="btn-onboarding-continue" id="btnVerifyJoinCode" onclick="Onboarding.verifyInviteCode()" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  style="width: 18px; height: 18px; margin-right: 8px;">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                Verify invite code
+              </button>
+            </div>
           </div>
+
+          <!-- ======== SUBSTEP 2: PREVIEW SECTION ======== -->
+          <div id="join-substep-2" class="join-substep-pane"
+            style="display: none; flex-direction: column; gap: 1.25rem; width: 100%;">
+
+            <!-- Home/Check Icon -->
+            <div class="join-icon-container">
+              <div class="join-icon-box" style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="join-step-title-group">
+              <h2 class="join-step-title" style="margin-bottom: 0.25rem;">Confirm dining group details</h2>
+              <p class="join-step-description">We found the following mess group details associated with this invite
+                code.</p>
+            </div>
+
+            <!-- Preview Details Cards -->
+            <div class="join-preview-card">
+              <div class="preview-item">
+                <span class="preview-label">Dining Mess Name</span>
+                <span class="preview-value" id="previewMessName">DineDesk Mess</span>
+              </div>
+              <div class="preview-divider"></div>
+              <div class="preview-item">
+                <span class="preview-label">Mess Code</span>
+                <span class="preview-value monospace" id="previewMessCode">DD-XXXXX</span>
+              </div>
+              <div class="preview-divider"></div>
+              <div class="preview-item">
+                <span class="preview-label">Total Members</span>
+                <span class="preview-value" id="previewTotalMembers">0 members</span>
+              </div>
+              <div class="preview-divider"></div>
+              <div class="preview-item">
+                <span class="preview-label">Manager Name</span>
+                <span class="preview-value" id="previewManagerName">Admin Name</span>
+              </div>
+            </div>
+
+            <div class="wizard-actions" style="margin-top: 1rem;">
+              <button class="btn-onboarding-continue" id="btnPreviewNext" onclick="Onboarding.nextToRules()">
+                Next
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  style="width: 18px; height: 18px; margin-left: 8px;">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- ======== SUBSTEP 3: RULES CHECKLIST ======== -->
+          <div id="join-substep-3" class="join-substep-pane"
+            style="display: none; flex-direction: column; gap: 1.25rem; width: 100%;">
+
+            <!-- Rules/Book Icon -->
+            <div class="join-icon-container">
+              <div class="join-icon-box" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="join-step-title-group">
+              <h2 class="join-step-title" style="margin-bottom: 0.25rem;">Mess Rules & Regulations</h2>
+              <p class="join-step-description">Please read and agree to the rules set by the mess admin before joining.
+              </p>
+            </div>
+
+            <!-- Rules List Box -->
+            <div class="join-rules-wrapper">
+              <div id="joinRulesList" class="join-rules-list">
+                <!-- Dynamic list of rules -->
+              </div>
+            </div>
+
+            <!-- Checkbox to agree -->
+            <label class="join-agree-checkbox">
+              <input type="checkbox" id="joinRulesAgreement" onchange="Onboarding.toggleJoinSubmitBtn()">
+              <span class="custom-checkbox"></span>
+              <span class="agree-text">I agree to follow all the rules of this mess group.</span>
+            </label>
+
+            <div class="wizard-actions" style="margin-top: 1rem;">
+              <button class="btn-onboarding-continue" id="btnJoinConfirmSubmit" onclick="Onboarding.executeJoin()"
+                disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  style="width: 18px; height: 18px; margin-right: 8px;">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Confirm & Join Mess
+              </button>
+            </div>
+          </div>
+
         </div>
 
       </div>
@@ -822,33 +1007,15 @@
         </div>
         <div class="header-right">
           <!-- Notifications -->
-          <div class="dropdown" id="notifDropdown">
-            <button class="header-icon-btn" onclick="toggleNotifications(event)" aria-label="Notifications">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round">
-                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 01-3.46 0" />
-              </svg>
-              <span id="notifBadge" class="notif-count" style="display:none;">0</span>
-            </button>
-            <div id="notifPanel" class="notification-panel">
-              <div class="notification-panel-header">
-                <h4>Notifications</h4>
-                <button class="btn btn-ghost btn-sm" onclick="DineDesk.notifications.markAllRead()">Mark all
-                  read</button>
-              </div>
-              <div id="notifList" class="notification-list">
-                <div class="empty-state" style="padding:var(--space-8) var(--space-4);">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)"
-                    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                    <path d="M13.73 21a2 2 0 01-3.46 0" />
-                  </svg>
-                  <p style="margin-top:var(--space-2);font-size:var(--font-sm);">No notifications yet</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <button class="header-icon-btn" onclick="DineDesk.router.navigate('notifications')"
+            aria-label="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 01-3.46 0" />
+            </svg>
+            <span id="notifBadge" class="notif-count" style="display:none;">0</span>
+          </button>
         </div>
       </header>
 
@@ -980,30 +1147,32 @@
             <div class="form-group" style="margin-bottom:0;">
               <input type="date" id="mealDateInput" class="form-input" style="width:180px;">
             </div>
-            <!-- Complete Locked Meals Section -->
-            <div id="completeLockedMealsPanel" class="card"
-              style="margin: 0; padding: var(--space-3) var(--space-4); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color);">
-              <span class="text-sm font-semibold"
-                style="color: var(--text-secondary); display: flex; align-items: center; gap: 4px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
+          </div>
+
+          <!-- Complete Locked Meals Section -->
+          <div id="completeLockedMealsPanel" class="glass-plate-panel mb-6">
+            <div class="glass-plate-header">
+              <div class="glass-plate-title">
+                <svg class="glass-plate-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
-                Complete Locked Meals:
-              </span>
-              <select id="completeMealSelect" class="form-input"
-                style="width: 150px; height: 36px; padding: 0 var(--space-2); margin: 0; font-size: 14px;">
-                <option value="" disabled selected>Select Meal</option>
-                <option value="breakfast">Breakfast</option>
-                <option value="lunch">Lunch</option>
-                <option value="dinner">Dinner</option>
-              </select>
-              <button class="btn btn-primary" style="height: 36px; padding: 0 var(--space-3); font-size: 14px;"
-                onclick="DineDesk.meals.completeLockedMeal()" id="btnCompleteMeal" disabled>
-                Complete
-              </button>
+                <span>Complete Locked Meals</span>
+              </div>
+              <span class="glass-plate-subtitle">Select multiple locked meals to complete</span>
             </div>
+            <div class="glass-plate-options" id="lockedMealsOptions">
+              <!-- Rendered dynamically -->
+            </div>
+            <button class="btn-glass-complete" onclick="DineDesk.meals.completeLockedMeal()" id="btnCompleteMeal"
+              disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>Complete Selected</span>
+            </button>
           </div>
 
           <div id="mealTypeTabs" class="meal-type-tabs">
@@ -1027,9 +1196,19 @@
             <div class="flex items-center gap-3">
               <div class="flex items-center gap-2">
                 <label class="form-label" style="margin:0;white-space:nowrap;">Meals:</label>
-                <input type="number" id="bulkMealCount" class="form-input meal-count-input" value="1" min="0" max="10"
-                  style="width:64px;">
+                <div class="number-spinner">
+                  <button type="button" onclick="DineDesk.meals.decrementBulkCount()">−</button>
+                  <input type="number" id="bulkMealCount" value="1" min="0" max="10">
+                  <button type="button" onclick="DineDesk.meals.incrementBulkCount()">+</button>
+                </div>
               </div>
+              <label class="toggle-switch" id="bulkOverrideSwitch" style="margin-right: 4px;">
+                <input type="checkbox" id="overrideWithBulkCount">
+                <span class="toggle-slider" style="width: 42px; height: 22px;"></span>
+                <span class="toggle-label"
+                  style="font-size: var(--font-xs); font-weight: var(--weight-bold); color: var(--text-secondary); margin-left: 6px; white-space: nowrap;">Bulk
+                  Mode</span>
+              </label>
               <button class="btn btn-primary" onclick="DineDesk.meals.saveBulkMeals()" id="saveMealsBtn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
@@ -1236,7 +1415,7 @@
                     </div>
                     <div class="member-nav-info">
                       <h4>History</h4>
-                      <p>Your meal and deposit timeline</p>
+                      <p>Your dining timeline and record</p>
                     </div>
                     <div class="member-nav-arrow">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1480,6 +1659,20 @@
             <button class="btn btn-primary" onclick="DineDesk.settings.saveDiningInfo()">Save Changes</button>
           </div>
 
+          <!-- Mess Rules Settings -->
+          <div class="settings-card">
+            <h4>📋 Mess Rules</h4>
+            <p style="color:var(--text-secondary);font-size:var(--font-sm);margin-bottom:var(--space-4);">Add rules and
+              guidelines for your members. They will see these rules when joining your mess.</p>
+            <div class="form-group mt-4">
+              <label class="form-label" for="settingsRulesInput">Mess Rules (One rule per line)</label>
+              <textarea id="settingsRulesInput" class="form-input" rows="6"
+                placeholder="Enter each rule on a new line...&#10;e.g. Keep dining area clean&#10;e.g. Turn off meals before 8 AM cutoff"
+                style="min-height: 120px; font-family: inherit; font-size: var(--font-sm); padding: var(--space-3); resize: vertical;"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="DineDesk.settings.saveMessRules()">Save Rules</button>
+          </div>
+
           <!-- Danger Zone -->
           <div class="settings-card" style="border-color:var(--danger-200);">
             <h4 style="color:var(--danger-600);">⚠️ Danger Zone</h4>
@@ -1500,6 +1693,62 @@
             <div class="profile-info">
               <h3 id="profileName">Loading...</h3>
               <p id="profileRole">—</p>
+            </div>
+          </div>
+
+          <!-- Dining Information Card -->
+          <div class="card"
+            style="margin-top: var(--space-6); margin-bottom: var(--space-6); padding: var(--space-5); border-radius: var(--radius-xl);">
+            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5);">
+              <div class="glass-icon-wrapper">
+                <div class="glass-icon glass-accent"
+                  style="width: 38px; height: 38px; border-radius: var(--radius-md);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
+                </div>
+              </div>
+              <div>
+                <h4
+                  style="margin: 0; font-size: var(--font-base); font-weight: var(--weight-bold); color: var(--text-primary);">
+                  Dining Information</h4>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+              <div style="border-left: 3px solid var(--accent-500); padding-left: var(--space-3);">
+                <div
+                  style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
+                  Dining Name</div>
+                <div id="profileDiningName"
+                  style="font-size: var(--font-sm); font-weight: var(--weight-bold); color: var(--text-primary);">
+                  Loading...</div>
+              </div>
+              <div style="border-left: 3px solid var(--primary-500); padding-left: var(--space-3);">
+                <div
+                  style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
+                  Dining Join ID</div>
+                <div id="profileDiningJoinId"
+                  style="font-size: var(--font-sm); font-weight: var(--weight-medium); color: var(--text-secondary); word-break: break-all; font-family: monospace;">
+                  Loading...</div>
+              </div>
+              <div style="border-left: 3px solid var(--warning-500); padding-left: var(--space-3);">
+                <div
+                  style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
+                  Total Members</div>
+                <div id="profileTotalMembers"
+                  style="font-size: var(--font-sm); font-weight: var(--weight-bold); color: var(--text-primary);">
+                  Loading...</div>
+              </div>
+              <div style="border-left: 3px solid var(--gray-400); padding-left: var(--space-3);">
+                <div
+                  style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
+                  Joined Mess</div>
+                <div id="profileJoinedSince"
+                  style="font-size: var(--font-sm); font-weight: var(--weight-bold); color: var(--text-primary);">
+                  Loading...</div>
+              </div>
             </div>
           </div>
 
@@ -1550,33 +1799,77 @@
           <!-- Profile Settings & Password Change (Visible for members) -->
           <div id="profileSettingsSection" class="hidden" style="margin-top: var(--space-6);">
             <!-- Update Profile Info Card -->
-            <div class="card" style="margin-bottom: var(--space-6);">
-              <h4 style="margin-bottom: var(--space-4);">👤 Update Profile</h4>
+            <div class="card" style="margin-bottom: var(--space-6); padding: var(--space-5);">
+              <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5);">
+                <div class="glass-icon-wrapper">
+                  <div class="glass-icon glass-primary"
+                    style="width: 38px; height: 38px; border-radius: var(--radius-md);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <h4
+                    style="margin: 0; font-size: var(--font-base); font-weight: var(--weight-bold); color: var(--text-primary);">
+                    Update Profile</h4>
+                </div>
+              </div>
               <div class="form-group">
                 <label class="form-label" for="profileNameInput">Full Name</label>
                 <input type="text" id="profileNameInput" class="form-input" placeholder="Enter your full name">
               </div>
               <div class="form-group">
-                <label class="form-label" for="profilePhoneInput">Phone Number</label>
-                <input type="text" id="profilePhoneInput" class="form-input" placeholder="Enter phone number">
+                <label class="form-label" for="profileEmailInput">Email Address</label>
+                <input type="email" id="profileEmailInput" class="form-input" readonly tabindex="-1"
+                  style="background: var(--gray-50); color: var(--text-secondary); cursor: not-allowed; border-color: var(--border-color); pointer-events: none; user-select: none;">
               </div>
-              <button class="btn btn-primary" onclick="DineDesk.history.updateProfileInfo()">Save Profile</button>
+              <div class="form-group">
+                <label class="form-label" for="profilePhoneInput">Phone Number</label>
+                <input type="text" id="profilePhoneInput" class="form-input" placeholder="Enter phone number"
+                  maxlength="11">
+                <div id="phoneValidationError"
+                  style="font-size: var(--font-xs); color: var(--danger-600); margin-top: var(--space-1); display: none;">
+                  Phone number must be exactly 11 digits.</div>
+              </div>
+              <button class="btn btn-primary" id="btnSaveProfile" onclick="DineDesk.history.updateProfileInfo()"
+                disabled>Save Profile</button>
             </div>
 
             <!-- Change Password Card -->
-            <div class="card" style="margin-bottom: var(--space-6);">
-              <h4 style="margin-bottom: var(--space-4);">🔒 Change Password</h4>
+            <div class="card" style="margin-bottom: var(--space-6); padding: var(--space-5);">
+              <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5);">
+                <div class="glass-icon-wrapper">
+                  <div class="glass-icon glass-danger"
+                    style="width: 38px; height: 38px; border-radius: var(--radius-md);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <h4
+                    style="margin: 0; font-size: var(--font-base); font-weight: var(--weight-bold); color: var(--text-primary);">
+                    Change Password</h4>
+                </div>
+              </div>
               <div class="form-group">
                 <label class="form-label" for="profileNewPasswordInput">New Password</label>
                 <input type="password" id="profileNewPasswordInput" class="form-input"
-                  placeholder="Enter new password (min 6 chars)">
+                  placeholder="Enter new password (min 8 chars)">
               </div>
               <div class="form-group">
                 <label class="form-label" for="profileConfirmPasswordInput">Confirm New Password</label>
                 <input type="password" id="profileConfirmPasswordInput" class="form-input"
                   placeholder="Confirm new password">
               </div>
-              <button class="btn btn-primary" onclick="DineDesk.history.changePassword()">Update Password</button>
+              <div id="passwordValidationError"
+                style="font-size: var(--font-xs); color: var(--danger-600); margin-top: var(--space-1); margin-bottom: var(--space-3); display: none;">
+              </div>
+              <button class="btn btn-primary" id="btnUpdatePassword" onclick="DineDesk.history.changePassword()"
+                disabled>Update Password</button>
             </div>
           </div>
 
@@ -1801,9 +2094,49 @@
 
         <!-- ======== HISTORY PAGE ======== -->
         <section id="page-history" class="page-section">
-          <div class="card">
-            <h3>History</h3>
-            <p style="color: var(--text-secondary); margin-top: 8px;">Content coming soon...</p>
+          <!-- Compact Top Bar: Title -->
+          <div class="summary-topbar" style="margin-bottom: var(--space-6);">
+            <div class="summary-topbar-title">
+              <h2>Recent Activities</h2>
+              <p>Dining timeline, member updates, bazar and costing records</p>
+            </div>
+          </div>
+
+          <!-- Timeline Wrapper Card -->
+          <div class="card" style="padding: var(--space-6); border-radius: var(--radius-xl);">
+            <div id="historyActivityTimeline" class="timeline">
+              <div class="empty-state" style="padding:var(--space-6);">
+                <div class="spinner"></div>
+                <p style="margin-top: 12px; font-size: var(--font-sm); color: var(--text-secondary);">Loading recent
+                  activities...</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======== NOTIFICATIONS PAGE ======== -->
+        <section id="page-notifications" class="page-section">
+          <!-- Compact Top Bar: Title + Mark All Read -->
+          <div class="summary-topbar" style="margin-bottom: var(--space-6);">
+            <div class="summary-topbar-title">
+              <h2>Notifications</h2>
+              <p>Your dining alerts and updates</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="DineDesk.notifications.markAllRead()"
+              style="color: var(--primary-600); font-weight: var(--weight-bold); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--radius-md); background: var(--bg-primary);">
+              Mark all read
+            </button>
+          </div>
+
+          <!-- Notifications Wrapper Card -->
+          <div class="card" style="border-radius: var(--radius-xl); overflow: hidden; background: var(--bg-primary);">
+            <div id="notificationsPageList" class="notification-list" style="max-height: none;">
+              <div class="empty-state" style="padding:var(--space-6);">
+                <div class="spinner"></div>
+                <p style="margin-top: 12px; font-size: var(--font-sm); color: var(--text-secondary);">Loading
+                  notifications...</p>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -2170,11 +2503,6 @@
       document.getElementById('sidebar').classList.toggle('open');
       document.getElementById('sidebarOverlay').classList.toggle('active');
     }
-    function toggleNotifications(e) {
-      if (e) e.stopPropagation();
-      document.getElementById('notifPanel').classList.toggle('active');
-    }
-
     // Close sidebar user dropdown
     document.getElementById('sidebarUserBtn').addEventListener('click', function () {
       document.getElementById('userDropdown').classList.toggle('active');
@@ -2184,9 +2512,6 @@
     document.addEventListener('click', function (e) {
       if (!e.target.closest('#sidebarUserBtn') && !e.target.closest('#userDropdown')) {
         document.getElementById('userDropdown').classList.remove('active');
-      }
-      if (!e.target.closest('#notifDropdown')) {
-        document.getElementById('notifPanel').classList.remove('active');
       }
       if (!e.target.closest('.custom-dropdown')) {
         document.querySelectorAll('.custom-dropdown').forEach(dropdown => {

@@ -48,6 +48,11 @@ const UsersModule = {
       this.users = snap.val() || {};
       this.render();
       this._updateUserCount();
+
+      // If we are currently on the meals page, update its user grid
+      if (Router.currentPage === 'meals' && DineDesk.meals) {
+        DineDesk.meals.renderUserGrid();
+      }
     });
 
     db.ref(`dinings/${diningId}/deposits`).on('value', (snap) => {
@@ -104,7 +109,7 @@ const UsersModule = {
     grid.innerHTML = userEntries.map(([id, user]) => {
       const uBreakdown = this.mealsBreakdown[id] || { breakfast: 0, lunch: 0, dinner: 0 };
       const mealCost = Utils.calcMealCost(mealRate, user.totalMeals, uBreakdown, fixedRates);
-      
+
       const deposit = uDeposits[id] || 0;
       const otherCost = uOtherCosts[id] || 0;
       const deduction = uDeductions[id] || 0;

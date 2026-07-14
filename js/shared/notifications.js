@@ -72,7 +72,7 @@ const Notifications = {
    * Render notification list in the panel
    */
   renderNotifications(notifications, userId) {
-    const list = document.getElementById('notifList');
+    const list = document.getElementById('notificationsPageList');
     const badge = document.getElementById('notifBadge');
     if (!list) return;
 
@@ -160,7 +160,7 @@ const Notifications = {
     this.toast('info', 'Notifications', 'All notifications marked as read');
   },
 
-  async log(diningId, action, details, performedBy, targetUserId = null) {
+  async log(diningId, action, details, performedBy, targetUserId = null, isSingle = false) {
     if (!diningId) return;
     const logData = {
       action,
@@ -170,6 +170,9 @@ const Notifications = {
     };
     if (targetUserId) {
       logData.targetUserId = targetUserId;
+    }
+    if (isSingle) {
+      logData.isSingle = true;
     }
 
     // Write to global logs

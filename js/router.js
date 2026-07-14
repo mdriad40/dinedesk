@@ -50,8 +50,9 @@ const Router = {
   _showPage(page) {
     // Save scroll position of current page before switching
     const contentArea = document.querySelector('.content-area');
-    if (contentArea && this.currentPage) {
-      this.scrollPositions[this.currentPage] = contentArea.scrollTop;
+    if (this.currentPage) {
+      const scrollY = window.scrollY || document.documentElement.scrollTop || (contentArea ? contentArea.scrollTop : 0);
+      this.scrollPositions[this.currentPage] = scrollY;
     }
 
     // Validate page
@@ -91,7 +92,8 @@ const Router = {
       mealchart: 'Meal Chart',
       bazar: 'Bazar',
       summary: 'Summary',
-      history: 'History'
+      history: 'History',
+      notifications: 'Notifications'
     };
     Utils.setText('headerTitle', titles[page] || 'Dashboard');
     const subtitle = document.getElementById('headerSubtitle');
@@ -103,8 +105,15 @@ const Router = {
     // Toggle header back button and mobile menu button visibility
     const backBtn = document.getElementById('headerBackBtn');
     if (backBtn) {
-      const showBack = (page === 'mealchart' || page === 'bazar' || page === 'summary');
+      const showBack = (page === 'mealchart' || page === 'bazar' || page === 'summary' || page === 'history' || page === 'notifications');
       backBtn.style.display = showBack ? 'inline-flex' : 'none';
+
+      // Set onclick dynamically to handle navigation flow
+      if (page === 'notifications') {
+        backBtn.onclick = () => window.history.back();
+      } else {
+        backBtn.onclick = () => DineDesk.router.navigate('overview');
+      }
 
       const menuBtn = document.querySelector('.mobile-menu-btn');
       if (menuBtn) {
@@ -118,7 +127,7 @@ const Router = {
 
     // Determine which nav page should be highlighted
     let activeNavPage = page;
-    if (page === 'mealchart' || page === 'bazar' || page === 'summary') {
+    if (page === 'mealchart' || page === 'bazar' || page === 'summary' || page === 'history') {
       activeNavPage = 'overview';
     }
 
@@ -136,17 +145,30 @@ const Router = {
     this._onPageEnter(page);
 
     // Restore scroll position for the new page
-    if (contentArea) {
-      const savedScroll = this.scrollPositions[page] || 0;
-      contentArea.scrollTop = savedScroll;
+    const savedScroll = this.scrollPositions[page] || 0;
 
-      // Reinforced fallback to handle dynamic rendering or layout reflows
-      requestAnimationFrame(() => {
-        if (contentArea) {
-          contentArea.scrollTop = savedScroll;
-        }
-      });
+    // Temporarily disable smooth scrolling to scroll instantly
+    const htmlEl = document.documentElement;
+    const prevScrollBehavior = htmlEl.style.scrollBehavior;
+    htmlEl.style.scrollBehavior = 'auto';
+
+    if (contentArea) {
+      contentArea.scrollTop = savedScroll;
     }
+    window.scrollTo(0, savedScroll);
+
+    // Reinforced fallback to handle dynamic rendering or layout reflows
+    requestAnimationFrame(() => {
+      if (contentArea) {
+        contentArea.scrollTop = savedScroll;
+      }
+      window.scrollTo(0, savedScroll);
+
+      // Restore previous scroll behavior
+      setTimeout(() => {
+        htmlEl.style.scrollBehavior = prevScrollBehavior;
+      }, 50);
+    });
   },
 
   /**
@@ -188,7 +210,7 @@ const Router = {
         if (DineDesk.summary) DineDesk.summary.refresh();
         break;
       case 'history':
-        // Placeholders for future page-specific logic
+        if (DineDesk.history) DineDesk.history.refreshHistoryPage();
         break;
     }
   }

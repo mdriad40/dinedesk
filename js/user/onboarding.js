@@ -26,6 +26,7 @@ const Onboarding = {
   // Join Mess State
   inviteCodeInput: '',
   matchedDining: null,
+  joinSubStep: 1,
 
   /**
    * Initialize onboarding flow
@@ -224,6 +225,11 @@ const Onboarding = {
       if (progressContainer) progressContainer.style.display = 'none';
       if (progressHeader) progressHeader.style.display = 'none';
       if (stepWelcome) stepWelcome.style.display = 'flex';
+      
+      const joinBadge = document.getElementById('joinStepBadge');
+      if (joinBadge) joinBadge.style.display = 'none';
+      const stepInfo = document.getElementById('wizardStepInfo');
+      if (stepInfo) stepInfo.style.display = 'block';
       return;
     }
 
@@ -233,8 +239,8 @@ const Onboarding = {
     if (this.currentPath === 'join') {
       if (progressContainer) progressContainer.style.display = 'none';
       Utils.setText('wizardTitle', 'Join a mess');
-      Utils.setText('wizardStepInfo', '1 / 3');
       if (stepJoin) stepJoin.style.display = 'flex';
+      this.goToJoinSubStep(this.joinSubStep || 1);
       return;
     }
 
@@ -327,6 +333,7 @@ const Onboarding = {
     if (path === 'create') {
       this.showStep(1);
     } else {
+      this.joinSubStep = 1;
       this.showStep(7); // Show Join Mess form directly
     }
   },
@@ -338,8 +345,12 @@ const Onboarding = {
     if (this.currentStep === 0) return;
 
     if (this.currentPath === 'join') {
-      this.currentPath = null;
-      this.showStep(0);
+      if (this.joinSubStep > 1) {
+        this.goToJoinSubStep(this.joinSubStep - 1);
+      } else {
+        this.currentPath = null;
+        this.showStep(0);
+      }
       return;
     }
 
@@ -715,16 +726,27 @@ const Onboarding = {
   async verifyInviteCode() {
     const input = document.getElementById('joinMessCodeInput');
     const code = input ? input.value.trim().toUpperCase() : '';
+    const errorBox = document.getElementById('joinCodeError');
+    const errorMsg = document.getElementById('joinCodeErrorMsg');
+
+    if (errorBox) errorBox.style.display = 'none';
 
     if (!code) {
-      Notifications.toast('warning', 'Missing Code', 'Please enter a mess code.');
+      if (errorBox && errorMsg) {
+        errorMsg.textContent = 'Please enter an invite code.';
+        errorBox.style.display = 'flex';
+      } else {
+        Notifications.toast('warning', 'Missing Code', 'Please enter a mess code.');
+      }
       return;
     }
 
     const btn = document.getElementById('btnVerifyJoinCode');
+    let originalBtnHTML = '';
     if (btn) {
+      originalBtnHTML = btn.innerHTML;
       btn.disabled = true;
-      btn.textContent = 'Verifying code...';
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="border: 2px solid white; border-top: 2px solid transparent; border-radius: 50%; width: 14px; height: 14px; display: inline-block; animation: spin 0.75s linear infinite; margin-right: 8px;"></span>Verifying code...`;
     }
 
     try {
@@ -732,61 +754,200 @@ const Onboarding = {
       const diningId = snap.val();
 
       if (!diningId) {
-        Notifications.toast('error', 'Invalid Code', 'No mess found with this code. Check and try again.');
+        if (errorBox && errorMsg) {
+          errorMsg.textContent = 'Invalid invite code. No mess group found.';
+          errorBox.style.display = 'flex';
+        } else {
+          Notifications.toast('error', 'Invalid Code', 'No mess found with this code. Check and try again.');
+        }
         if (btn) {
           btn.disabled = false;
-          btn.textContent = 'Verify invite code';
+          btn.innerHTML = originalBtnHTML;
         }
         return;
       }
 
-      // Found dining! Load details for preview
-      const infoSnap = await db.ref(`dinings/${diningId}/info`).once('value');
+      // Found dining! Load details for preview, rules, and users count
+      const [infoSnap, rulesSnap, usersSnap] = await Promise.all([
+        db.ref(`dinings/${diningId}/info`).once('value'),
+        db.ref(`dinings/${diningId}/rules`).once('value'),
+        db.ref(`dinings/${diningId}/users`).once('value')
+      ]);
+
       const info = infoSnap.val() || {};
+      const rulesList = rulesSnap.val() || [];
+      const totalMembers = usersSnap.exists() ? Object.keys(usersSnap.val()).length : 0;
 
       this.matchedDining = {
         id: diningId,
         name: info.name || 'Unnamed Mess',
-        manager: info.managerName || 'Manager'
+        manager: info.managerName || 'Manager',
+        messCode: info.messCode || code,
+        rules: rulesList,
+        totalMembers: totalMembers
       };
 
-      // Show preview area
-      const previewArea = document.getElementById('joinPreviewArea');
-      if (previewArea) {
-        previewArea.innerHTML = `
-          <div class="choice-card selected" style="margin-top: 1rem; cursor: default;">
-            <div class="choice-glass-icon-wrapper">
-              <div class="choice-glass-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                  <polyline points="9 22 9 12 15 12 15 22" />
-                </svg>
-              </div>
-            </div>
-            <div class="choice-text">
-              <h3>${this.matchedDining.name}</h3>
-              <p>Manager: <strong>${this.matchedDining.manager}</strong></p>
-            </div>
-          </div>
-        `;
-        previewArea.style.display = 'block';
+      // Populate Preview fields
+      Utils.setText('previewMessName', this.matchedDining.name);
+      Utils.setText('previewMessCode', this.matchedDining.messCode);
+      Utils.setText('previewTotalMembers', `${this.matchedDining.totalMembers} ${this.matchedDining.totalMembers === 1 ? 'member' : 'members'}`);
+      Utils.setText('previewManagerName', this.matchedDining.manager);
+
+      // Reset button state
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHTML;
       }
 
-      // Update button to final action
-      const finalBtn = document.getElementById('btnJoinConfirmSubmit');
-      if (finalBtn) {
-        finalBtn.style.display = 'flex';
-      }
-      if (btn) btn.style.display = 'none';
+      // Proceed to Substep 2
+      this.goToJoinSubStep(2);
 
     } catch (err) {
       console.error('[Onboarding] Verify code error:', err);
-      Notifications.toast('error', 'Error', 'Failed to verify invite code.');
+      if (errorBox && errorMsg) {
+        errorMsg.textContent = 'Failed to verify invite code. Please check connection.';
+        errorBox.style.display = 'flex';
+      } else {
+        Notifications.toast('error', 'Error', 'Failed to verify invite code.');
+      }
       if (btn) {
         btn.disabled = false;
-        btn.textContent = 'Verify invite code';
+        btn.innerHTML = originalBtnHTML;
       }
     }
+  },
+
+  /**
+   * Transition to rules step (Substep 3)
+   */
+  nextToRules() {
+    if (!this.matchedDining) return;
+
+    // Populate rules list
+    const rulesListContainer = document.getElementById('joinRulesList');
+    if (rulesListContainer) {
+      rulesListContainer.innerHTML = '';
+      let rules = this.matchedDining.rules || [];
+      if (typeof rules === 'object' && !Array.isArray(rules)) {
+        rules = Object.values(rules);
+      }
+
+      if (rules.length === 0) {
+        // Fallback default rules
+        const defaultRules = [
+          'Turn off meals before the designated daily cutoff times.',
+          'Bazar costs and receipts must be submitted on time.',
+          'Maintain cleanliness in the dining hall and common areas.',
+          'Be respectful to other mess members and the manager.'
+        ];
+        defaultRules.forEach(rule => {
+          rulesListContainer.innerHTML += `
+            <div class="rule-item">
+              <div class="rule-dot"></div>
+              <p class="rule-text">${rule}</p>
+            </div>
+          `;
+        });
+      } else {
+        rules.forEach(rule => {
+          rulesListContainer.innerHTML += `
+            <div class="rule-item">
+              <div class="rule-dot"></div>
+              <p class="rule-text">${rule}</p>
+            </div>
+          `;
+        });
+      }
+    }
+
+    // Reset agreement checkbox and button state
+    const checkbox = document.getElementById('joinRulesAgreement');
+    if (checkbox) checkbox.checked = false;
+    
+    this.toggleJoinSubmitBtn();
+
+    // Proceed to Substep 3
+    this.goToJoinSubStep(3);
+  },
+
+  /**
+   * Toggle Submit Button state depending on agreement checkbox
+   */
+  toggleJoinSubmitBtn() {
+    const checkbox = document.getElementById('joinRulesAgreement');
+    const submitBtn = document.getElementById('btnJoinConfirmSubmit');
+    if (submitBtn) {
+      submitBtn.disabled = checkbox ? !checkbox.checked : true;
+    }
+  },
+
+  /**
+   * Handle code input to dynamically enable/disable verify button
+   */
+  handleCodeInput(val) {
+    const code = val.trim().toUpperCase();
+    const btn = document.getElementById('btnVerifyJoinCode');
+    if (btn) {
+      btn.disabled = !(code.includes('DD') && code.length >= 5);
+    }
+  },
+
+  /**
+   * Navigate Join Path Substeps
+   */
+  goToJoinSubStep(subStep) {
+    this.joinSubStep = subStep;
+
+    if (subStep === 1) {
+      const input = document.getElementById('joinMessCodeInput');
+      const val = input ? input.value : '';
+      this.handleCodeInput(val);
+    }
+
+    // Hide all substep panes
+    const pane1 = document.getElementById('join-substep-1');
+    const pane2 = document.getElementById('join-substep-2');
+    const pane3 = document.getElementById('join-substep-3');
+    if (pane1) pane1.style.display = 'none';
+    if (pane2) pane2.style.display = 'none';
+    if (pane3) pane3.style.display = 'none';
+
+    // Show step badge in main wizard header
+    const badge = document.getElementById('joinStepBadge');
+    if (badge) {
+      badge.textContent = `${subStep} / 3`;
+      badge.style.display = 'block';
+    }
+
+    // Hide standard wizard step info if visible
+    const stepInfo = document.getElementById('wizardStepInfo');
+    if (stepInfo) stepInfo.style.display = 'none';
+
+    // Show correct pane
+    const targetPane = document.getElementById(`join-substep-${subStep}`);
+    if (targetPane) targetPane.style.display = 'flex';
+
+    // Update progress tracker visual states
+    const steps = document.querySelectorAll('.join-progress-step');
+    const lines = document.querySelectorAll('.join-progress-line');
+
+    steps.forEach((stepEl, idx) => {
+      const stepNum = idx + 1;
+      stepEl.classList.remove('active', 'completed');
+      if (stepNum < subStep) {
+        stepEl.classList.add('completed');
+      } else if (stepNum === subStep) {
+        stepEl.classList.add('active');
+      }
+    });
+
+    lines.forEach((lineEl, idx) => {
+      const lineNum = idx + 1;
+      lineEl.classList.remove('active');
+      if (lineNum < subStep) {
+        lineEl.classList.add('active');
+      }
+    });
   },
 
   /**

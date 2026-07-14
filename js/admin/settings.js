@@ -20,6 +20,11 @@ const SettingsModule = {
       this.info = snap.val() || {};
       this._populateDiningInfo();
     });
+
+    db.ref(`dinings/${diningId}/rules`).on('value', (snap) => {
+      this.rules = snap.val() || [];
+      this._populateRulesUI();
+    });
   },
 
   /**
@@ -272,6 +277,39 @@ const SettingsModule = {
   },
 
   /**
+   * Populate rules input
+   */
+  _populateRulesUI() {
+    const rulesInput = document.getElementById('settingsRulesInput');
+    if (rulesInput && this.rules) {
+      let rulesArr = this.rules;
+      if (typeof rulesArr === 'object' && !Array.isArray(rulesArr)) {
+        rulesArr = Object.values(rulesArr);
+      }
+      rulesInput.value = rulesArr.join('\n');
+    }
+  },
+
+  /**
+   * Save mess rules to Firebase
+   */
+  async saveMessRules() {
+    const rulesInput = document.getElementById('settingsRulesInput');
+    if (!rulesInput) return;
+    const rulesText = rulesInput.value.trim();
+    const rulesList = rulesText.split('\n').map(r => r.trim()).filter(r => r.length > 0);
+
+    try {
+      await db.ref(`dinings/${this.diningId}/rules`).set(rulesList);
+      Notifications.toast('success', 'Rules Saved', 'Mess rules and guidelines updated.');
+      await Notifications.log(this.diningId, 'rules_updated', 'Mess rules updated by admin', DineDesk.state.userId);
+    } catch (error) {
+      console.error('Error saving rules:', error);
+      Notifications.toast('error', 'Error', 'Failed to save mess rules.');
+    }
+  },
+
+  /**
    * Get current settings (for other modules)
    */
   getSettings() {
@@ -284,6 +322,7 @@ const SettingsModule = {
   refresh() {
     this._populateUI();
     this._populateDiningInfo();
+    this._populateRulesUI();
   }
 };
 
