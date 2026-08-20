@@ -9,6 +9,105 @@ const UserDashboard = {
   monthlyDeposit: 0,
   monthlyMeals: 0,
   monthlyBazar: 0,
+  _activityRenderTimer: null,
+  _activityDataReady: false,  // true once first Firebase activity data has arrived
+
+  /**
+   * Get the date currently controlled for a specific meal type (immune to timezone shift)
+   */
+  getMealControlDate(mealType) {
+    const todayStr = Utils.today();
+    if (!todayStr) return '';
+    const [year, month, day] = todayStr.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
+
+    // We check up to 5 days into the future starting from TODAY to find the first uncompleted date
+    for (let i = 0; i < 5; i++) {
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const dayKey = Utils.dayKey(dateStr);
+      
+      let completed = {};
+      const currentMonth = todayStr.substring(0, 7);
+      const checkMonth = dateStr.substring(0, 7);
+      
+      if (this.monthMealsData && currentMonth === checkMonth) {
+        completed = (this.monthMealsData[dayKey] && this.monthMealsData[dayKey].completed) || {};
+      }
+      
+      if (!completed[mealType]) {
+        return dateStr;
+      }
+      d.setDate(d.getDate() + 1);
+    }
+
+    // Fallback: today
+    return todayStr;
+  },
+
+  /**
+   * Get the overall date the user is currently controlling (minimum control date of all tracked meals)
+   */
+  getControlDate() {
+    const s = this.settings || {};
+    const trackedMeals = s.trackedMeals || { breakfast: true, lunch: true, dinner: true };
+    let minDate = null;
+    
+    ['breakfast', 'lunch', 'dinner'].forEach(type => {
+      if (trackedMeals[type] !== false) {
+        const controlDate = this.getMealControlDate(type);
+        if (!minDate || controlDate < minDate) {
+          minDate = controlDate;
+        }
+      }
+    });
+    
+    if (minDate) return minDate;
+
+    // Fallback: today
+    return Utils.today();
+  },
+
+  /**
+   * Determine whether a meal is locked based on its controlDate and deadline setting (immune to timezone shift)
+   */
+  isMealLocked(mealType, controlDate) {
+    const s = this.settings || {};
+    
+    // Check manual override setting first
+    const locks = s.locks || {};
+    const manualLock = locks[mealType]; // 'locked', 'unlocked', or undefined/'auto'
+    if (manualLock === 'locked') {
+      return true;
+    }
+    if (manualLock === 'unlocked') {
+      return false;
+    }
+
+    const autoEnabled = s.autoMealEnabled !== false;
+    if (!autoEnabled) return false;
+
+    const deadline = s[`${mealType}Deadline`] || (mealType === 'breakfast' ? '04:00' : mealType === 'lunch' ? '10:00' : '16:00');
+    
+    // Find locking date (controlDate - 1 day)
+    const [year, month, day] = controlDate.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
+    d.setDate(d.getDate() - 1);
+    
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dayVal = String(d.getDate()).padStart(2, '0');
+    const lockDateStr = `${y}-${m}-${dayVal}`;
+    
+    const todayStr = Utils.today();
+    
+    if (todayStr > lockDateStr) {
+      return true;
+    } else if (todayStr === lockDateStr) {
+      return Utils.isPastDeadline(deadline);
+    } else {
+      return false;
+    }
+  },
 
   init(diningId, userId) {
     this.diningId = diningId;
@@ -18,8 +117,10 @@ const UserDashboard = {
     this.userLogsData = [];
     this.userDepositsData = [];
     this.adminLogsData = [];
+    this._activityDataReady = false;  // reset so skeleton shows until data arrives
 
-    // Clean up previous listeners if any
+    // Clean up previous listeners and pending render timer
+    if (this._activityRenderTimer) { clearTimeout(this._activityRenderTimer); this._activityRenderTimer = null; }
     if (this._userRef) this._userRef.off();
     if (this._settingsRef) this._settingsRef.off();
     if (this._logsRef) this._logsRef.off();
@@ -46,21 +147,41 @@ const UserDashboard = {
     const isMember = role !== 'admin';
 
     if (isMember) {
-      // Listen to user-specific logs
-      this._logsRef = db.ref(`dinings/${diningId}/users/${userId}/logs`);
+      // Listen to user-specific logs (sorted newest-first for correct grouping)
+      this._logsRef = db.ref(`dinings/${diningId}/users/${userId}/logs`).orderByChild('timestamp');
       this._logsRef.on('value', (snap) => {
         this.userLogsData = [];
-        snap.forEach(child => { this.userLogsData.push(child.val()); });
-        this.renderRecentActivity(diningId);
+        snap.forEach(child => {
+          const val = child.val();
+          if (!val) return;
+          // Resolve Firebase ServerValue.TIMESTAMP objects to a numeric value
+          if (val.timestamp && typeof val.timestamp === 'object') {
+            val.timestamp = Date.now();
+          }
+          this.userLogsData.push(val);
+        });
+        // Reverse so newest entries come first
+        this.userLogsData.reverse();
+        this._activityDataReady = true;  // data has arrived at least once
+        this._debouncedRenderActivity(diningId);
       });
     } else {
-      // Admin: Listen to all dining logs
-      this._adminLogsRef = db.ref(`dinings/${diningId}/logs`);
+      // Admin: Listen to all dining logs (sorted newest-first)
+      this._adminLogsRef = db.ref(`dinings/${diningId}/logs`).orderByChild('timestamp');
       this._adminLogsRef.on('value', (snap) => {
         this.adminLogsData = [];
-        snap.forEach(child => { this.adminLogsData.push(child.val()); });
+        snap.forEach(child => {
+          const val = child.val();
+          if (!val) return;
+          // Resolve Firebase ServerValue.TIMESTAMP objects
+          if (val.timestamp && typeof val.timestamp === 'object') {
+            val.timestamp = Date.now();
+          }
+          this.adminLogsData.push(val);
+        });
         this.adminLogsData.reverse();
-        this.renderRecentActivity(diningId);
+        this._activityDataReady = true;  // data has arrived at least once
+        this._debouncedRenderActivity(diningId);
       });
     }
 
@@ -98,7 +219,7 @@ const UserDashboard = {
             depositTotal += amt;
           } else if (d.type === 'other_costing') {
             otherCostTotal += amt;
-          } else if (d.type === 'deduction') {
+          } else if (d.type === 'deduction' || d.type === 'friday_meal') {
             deductionTotal += amt;
           }
         }
@@ -107,7 +228,7 @@ const UserDashboard = {
       this.monthlyOtherCosting = otherCostTotal;
       this.monthlyDeduction = deductionTotal;
       this.renderStats();
-      this.renderRecentActivity(diningId);
+      this._debouncedRenderActivity(diningId);
     });
 
     // Bazar this month (total bazar spend)
@@ -174,7 +295,7 @@ const UserDashboard = {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         </div>
         <div class="stat-info">
-          <div class="stat-label">This Month Deposit</div>
+          <div class="stat-label">My Deposit</div>
           <div class="stat-value">${Utils.currency(this.monthlyDeposit)}</div>
         </div>
       </div>
@@ -183,8 +304,9 @@ const UserDashboard = {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
         </div>
         <div class="stat-info">
-          <div class="stat-label">This Month Meals</div>
+          <div class="stat-label">My Meal</div>
           <div class="stat-value">${this.monthlyMeals || 0}</div>
+          <span id="fridayMealDashLabel" style="display:none;margin-top:4px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(91,33,182,0.08));color:#7C3AED;border:1px solid rgba(124,58,237,0.2);letter-spacing:0.01em;align-items:center;gap:3px;">+ 0 Friday Meal</span>
         </div>
       </div>
       <div class="stat-card fade-up" style="animation-delay: 0.15s;">
@@ -192,7 +314,7 @@ const UserDashboard = {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
         <div class="stat-info">
-          <div class="stat-label">Total Meal Cost</div>
+          <div class="stat-label">My Meal Cost</div>
           <div class="stat-value">${Utils.currency(mealCost)}</div>
         </div>
       </div>
@@ -201,7 +323,7 @@ const UserDashboard = {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
         </div>
         <div class="stat-info">
-          <div class="stat-label">Total Other Cost</div>
+          <div class="stat-label">Other Cost</div>
           <div class="stat-value">${Utils.currency(otherCosting)}</div>
         </div>
       </div>
@@ -219,11 +341,16 @@ const UserDashboard = {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
         </div>
         <div class="stat-info">
-          <div class="stat-label">This Month Balance</div>
+          <div class="stat-label">My Balance</div>
           <div class="stat-value" style="color:${balance >= 0 ? 'var(--accent-600)' : 'var(--danger-600)'}">${Utils.currency(balance)}</div>
         </div>
       </div>
     `;
+
+    // Update Friday Meal label chip asynchronously
+    if (window.FridayMealPageModule && FridayMealPageModule._updateUserDashboardLabel) {
+      FridayMealPageModule._updateUserDashboardLabel();
+    }
   },
 
   /**
@@ -238,9 +365,7 @@ const UserDashboard = {
     const autoEnabled = !!s.autoMealEnabled;
     const trackedMeals = s.trackedMeals || { breakfast: true, lunch: true, dinner: true };
 
-    const todayKey = Utils.dayKey(Utils.today());
-    const todayMeals = (this.monthMealsData && this.monthMealsData[todayKey]) || {};
-    const completed = todayMeals.completed || {};
+    const controlDate = this.getControlDate();
 
     const meals = [
       {
@@ -286,56 +411,101 @@ const UserDashboard = {
       }
     ].filter(m => trackedMeals[m.type] !== false);
 
-    // Update date display
-    Utils.setText('mealDateDisplay', Utils.formatDate(Utils.today()));
+    // Update date display to show which date is currently controlled
+    Utils.setText('mealDateDisplay', Utils.formatDate(controlDate));
 
-    // Show/hide completed meals warning card
-    const completedList = meals.filter(m => !!completed[m.type]);
+    // Show/hide completed meals warning cards
     const warningContainer = document.getElementById('mealCompletedWarningContainer');
     if (warningContainer) {
-      if (completedList.length > 0) {
-        const todayStr = Utils.today();
-        const formattedToday = Utils.formatDate(todayStr);
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
-        const formattedTomorrow = Utils.formatDate(tomorrowStr);
+      warningContainer.innerHTML = '';
+      let hasAnyWarning = false;
+      let latestWarningHtml = '';
 
-        warningContainer.innerHTML = `
-          <div class="completed-meals-warning-card" style="
-            background: rgba(239, 68, 68, 0.05);
-            border: 1px solid rgba(239, 68, 68, 0.15);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            color: #991b1b;
-            border-radius: 12px;
-            padding: 10px 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-            font-weight: 400;
-            line-height: 1.45;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.03);
-          ">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; color:#b91c1c;">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="rgba(185, 28, 28, 0.08)"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            <div>
-              Today's (<strong>${formattedToday}</strong>) meal has already been added. You may turn the next meal on or off from <strong>${formattedTomorrow}</strong>.
+      // Check today and up to 4 days into the future
+      const todayStr = Utils.today();
+      const [year, month, day] = todayStr.split('-').map(Number);
+      const d = new Date(year, month - 1, day);
+
+      for (let i = 0; i < 5; i++) {
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const dayKey = Utils.dayKey(dateStr);
+        
+        let completedFlags = {};
+        const currentMonth = todayStr.substring(0, 7);
+        const checkMonth = dateStr.substring(0, 7);
+        
+        if (this.monthMealsData && currentMonth === checkMonth) {
+          completedFlags = (this.monthMealsData[dayKey] && this.monthMealsData[dayKey].completed) || {};
+        }
+
+        const completedMealsList = [];
+        if (completedFlags.breakfast) completedMealsList.push('B');
+        if (completedFlags.lunch) completedMealsList.push('L');
+        if (completedFlags.dinner) completedMealsList.push('D');
+
+        if (completedMealsList.length > 0) {
+          hasAnyWarning = true;
+          
+          let mealsLabel = '';
+          if (completedMealsList.length === 1) {
+            mealsLabel = completedMealsList[0];
+          } else if (completedMealsList.length === 2) {
+            mealsLabel = `${completedMealsList[0]} & ${completedMealsList[1]}`;
+          } else if (completedMealsList.length === 3) {
+            mealsLabel = `${completedMealsList[0]}, ${completedMealsList[1]} & ${completedMealsList[2]}`;
+          }
+
+          const formattedDate = Utils.formatDate(dateStr);
+          
+          // Calculate next date (dateStr + 1 day)
+          const nextD = new Date(d);
+          nextD.setDate(nextD.getDate() + 1);
+          const nextDateStr = `${nextD.getFullYear()}-${String(nextD.getMonth() + 1).padStart(2, '0')}-${String(nextD.getDate()).padStart(2, '0')}`;
+          const formattedNextDate = Utils.formatDate(nextDateStr);
+          
+          const mealsLabelWithSpace = mealsLabel ? ` ${mealsLabel}` : '';
+
+          latestWarningHtml = `
+            <div class="completed-meals-warning-card" style="
+              background: rgba(239, 68, 68, 0.05);
+              border: 1px solid rgba(239, 68, 68, 0.15);
+              backdrop-filter: blur(8px);
+              -webkit-backdrop-filter: blur(8px);
+              color: #991b1b;
+              border-radius: 12px;
+              padding: 10px 14px;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              font-size: 13px;
+              font-weight: 400;
+              line-height: 1.45;
+              margin-bottom: var(--space-2);
+              box-shadow: 0 4px 12px rgba(239, 68, 68, 0.03);
+            ">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; color:#b91c1c;">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="rgba(185, 28, 28, 0.08)"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <div>
+                <strong>${formattedDate}${mealsLabelWithSpace}</strong> meal has already been added. You may turn the next meal on or off from <strong>${formattedNextDate}</strong>.
+              </div>
             </div>
-          </div>
-        `;
-        warningContainer.style.display = 'block';
-      } else {
-        warningContainer.style.display = 'none';
+          `;
+        }
+
+        d.setDate(d.getDate() + 1);
       }
+
+      if (latestWarningHtml) {
+        warningContainer.innerHTML = latestWarningHtml;
+      }
+      warningContainer.style.display = hasAnyWarning ? 'block' : 'none';
     }
 
     grid.innerHTML = meals.map(meal => {
-      const isCompleted = !!completed[meal.type];
-      const isLocked = !isCompleted && autoEnabled && Utils.isPastDeadline(meal.deadline);
+      const mealControlDate = this.getMealControlDate(meal.type);
+      const isLocked = this.isMealLocked(meal.type, mealControlDate);
 
       const val = mealStatus[meal.type];
       let mealCount = 1;
@@ -401,6 +571,12 @@ const UserDashboard = {
    */
   async adjustMealCount(mealType, delta) {
     try {
+      const mealControlDate = this.getMealControlDate(mealType);
+      if (this.isMealLocked(mealType, mealControlDate)) {
+        Notifications.toast('error', 'Meal Locked', 'The cutoff deadline for this meal has passed.');
+        return;
+      }
+
       const u = this.userData;
       const mealStatus = u.mealStatus || { breakfast: true, lunch: true, dinner: true };
       const currentVal = mealStatus[mealType];
@@ -490,6 +666,15 @@ const UserDashboard = {
         </div>
         <span>Add Bazar</span>
       </div>
+      <div class="quick-action-card" onclick="DineDesk.finance.showFinanceFixModal()">
+        <div class="quick-action-icon" style="background:rgba(239,68,68,0.12);color:#ef4444;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </div>
+        <span>Finance Fix</span>
+      </div>
     `;
   },
 
@@ -537,39 +722,53 @@ const UserDashboard = {
   },
 
   /**
-   * Group meal logs by calendar day
+   * Group meal logs by batchId (one activity card per save operation).
+   * Logs without a batchId are shown as individual entries (legacy support).
    */
   _groupMealLogs(logs) {
     const finalLogs = [];
-    const mealGroups = {};
+    const batchGroups = {}; // batchId -> [logs]
 
     const role = DineDesk.state.role;
     const isAdmin = role === 'admin';
 
     logs.forEach(log => {
-      if ((log.action === 'meal_updated' || log.action === 'meals_updated') && !log.isSingle) {
+      if (log.action === 'meal_updated' || log.action === 'meals_updated') {
         const ts = (typeof log.timestamp === 'number') ? log.timestamp : Date.now();
         const sanitizedLog = { ...log, timestamp: ts };
-        const dateObj = new Date(ts);
-        const dayKey = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-        if (!mealGroups[dayKey]) {
-          mealGroups[dayKey] = [];
+
+        if (log.batchId) {
+          // Group by batchId — every entry from the same save shares a batchId
+          if (!batchGroups[log.batchId]) {
+            batchGroups[log.batchId] = [];
+          }
+          batchGroups[log.batchId].push(sanitizedLog);
+        } else {
+          // Legacy log without batchId — show as its own entry
+          finalLogs.push({
+            action: 'meals_updated_group',
+            details: `• ${this._normalizeMealDetail(sanitizedLog.details)}`,
+            timestamp: ts,
+            performedBy: sanitizedLog.performedBy
+          });
         }
-        mealGroups[dayKey].push(sanitizedLog);
       } else {
         const ts = (typeof log.timestamp === 'number') ? log.timestamp : Date.now();
         finalLogs.push({ ...log, timestamp: ts });
       }
     });
 
-    Object.entries(mealGroups).forEach(([dayKey, items]) => {
-      // Sort latest first
-      items.sort((a, b) => b.timestamp - a.timestamp);
-      const latestTimestamp = items[0].timestamp;
+    // Build one activity card per batchId
+    Object.values(batchGroups).forEach(items => {
+      // Use the earliest timestamp in the batch as the card's timestamp
+      // (first log written is most accurate; items may arrive in any order from Firebase)
+      items.sort((a, b) => a.timestamp - b.timestamp);
+      const batchTimestamp = items[0].timestamp;
 
       let combinedDetails = '';
       if (isAdmin) {
-        // For admin/manager: group and deduplicate by (mealType + '_' + targetUserId)
+        // Admin view: show "MemberName: 1 Breakfast added" per user per meal type
+        // Deduplicate by (mealType + targetUserId) in case of duplicates
         const seenKeys = new Set();
         const deduped = items.filter(it => {
           const normalized = this._normalizeMealDetail(it.details);
@@ -589,12 +788,13 @@ const UserDashboard = {
           })
           .join('<br>');
       } else {
-        // For regular user/member: deduplicate by mealType/normalized detail only
+        // Member view: show one line per meal type (e.g., "• 1 Breakfast added")
+        // Deduplicate by meal type in case the same type was logged more than once
         const seenTypes = new Set();
         const deduped = items.filter(it => {
           const normalized = this._normalizeMealDetail(it.details);
           const mealType = this._extractMealType(normalized || it.details || '');
-          const key = mealType || normalized; // fallback to full detail if type can't be extracted
+          const key = mealType || normalized;
           if (seenTypes.has(key)) return false;
           seenTypes.add(key);
           return true;
@@ -608,7 +808,7 @@ const UserDashboard = {
       finalLogs.push({
         action: 'meals_updated_group',
         details: combinedDetails,
-        timestamp: latestTimestamp,
+        timestamp: batchTimestamp,
         performedBy: items[0].performedBy
       });
     });
@@ -616,6 +816,7 @@ const UserDashboard = {
     finalLogs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     return finalLogs;
   },
+
 
   /**
    * Extract meal type (Breakfast / Lunch / Dinner) from a detail string
@@ -628,9 +829,41 @@ const UserDashboard = {
     return null;
   },
 
+  /**
+   * Debounced wrapper for renderRecentActivity.
+   * Firebase on('value') can fire multiple times rapidly for a single atomic write
+   * (local optimistic update + server confirmation). Debouncing ensures we only
+   * render once the data has fully settled, preventing the "appears separate then
+   * merges" flicker in the activity feed.
+   */
+  _debouncedRenderActivity(diningId) {
+    if (this._activityRenderTimer) {
+      clearTimeout(this._activityRenderTimer);
+    }
+    this._activityRenderTimer = setTimeout(() => {
+      this._activityRenderTimer = null;
+      this.renderRecentActivity(diningId);
+    }, 350);
+  },
+
   renderRecentActivity(diningId) {
     const container = document.getElementById('recentActivity');
     if (!container) return;
+
+    // If Firebase hasn't delivered data yet, show a loading skeleton instead
+    // of the empty state — prevents the jarring "No Recent Activity" flash on refresh
+    if (!this._activityDataReady) {
+      container.innerHTML = `
+        <div class="activity-skeleton" style="padding:var(--space-4);">
+          <div class="skeleton-line" style="width:60%;height:14px;border-radius:6px;background:var(--gray-100);margin-bottom:12px;animation:pulse 1.4s ease-in-out infinite;"></div>
+          <div class="skeleton-line" style="width:80%;height:10px;border-radius:6px;background:var(--gray-100);margin-bottom:8px;animation:pulse 1.4s ease-in-out infinite 0.1s;"></div>
+          <div class="skeleton-line" style="width:50%;height:10px;border-radius:6px;background:var(--gray-100);margin-bottom:20px;animation:pulse 1.4s ease-in-out infinite 0.2s;"></div>
+          <div class="skeleton-line" style="width:70%;height:14px;border-radius:6px;background:var(--gray-100);margin-bottom:12px;animation:pulse 1.4s ease-in-out infinite 0.3s;"></div>
+          <div class="skeleton-line" style="width:85%;height:10px;border-radius:6px;background:var(--gray-100);animation:pulse 1.4s ease-in-out infinite 0.4s;"></div>
+        </div>
+      `;
+      return;
+    }
 
     const role = DineDesk.state.role;
     const isMember = role !== 'admin';
@@ -647,7 +880,8 @@ const UserDashboard = {
             details: l.details,
             timestamp: l.timestamp,
             performedBy: l.performedBy,
-            isSingle: l.isSingle
+            isSingle: l.isSingle,
+            batchId: l.batchId   // required for grouping same-save entries into one activity card
           });
         }
       });
@@ -838,6 +1072,7 @@ const UserDashboard = {
             <p>Activities will show up here as they happen.</p>
           </div>
         `;
+        // reset flag so next init cycle shows skeleton again
         return;
       }
 
@@ -1057,6 +1292,161 @@ const UserDashboard = {
   },
 
   /**
+   * AI Auto Meal System Schedule Check
+   */
+  async checkAutoMealSchedule() {
+    const role = DineDesk.state.role;
+    if (role === 'admin') return;
+
+    try {
+      const snap = await db.ref(`dinings/${this.diningId}/users/${this.userId}`).once('value');
+      const u = snap.val();
+      if (!u || !u.autoMealEnabled || !u.profile || !u.profile.classSchedule) return;
+
+      const classSchedule = u.profile.classSchedule;
+
+      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const tomorrowIndex = (new Date().getDay() + 1) % 7;
+      const tomorrowDay = dayNames[tomorrowIndex];
+
+      const tomorrowClasses = classSchedule[tomorrowDay];
+      if (!tomorrowClasses || tomorrowClasses.length === 0) return;
+
+      const mealWindows = {
+        breakfast: { start: "08:00", end: "09:30" },
+        lunch: { start: "13:00", end: "14:30" },
+        dinner: { start: "20:30", end: "22:00" }
+      };
+
+      const parseMinutes = (timeStr) => {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+      };
+
+      const hasOverlap = (startA, endA, startB, endB) => {
+        const minStartA = parseMinutes(startA);
+        const minEndA = parseMinutes(endA);
+        const minStartB = parseMinutes(startB);
+        const minEndB = parseMinutes(endB);
+        return Math.max(minStartA, minStartB) < Math.min(minEndA, minEndB);
+      };
+
+      const conflicts = [];
+      const mealStatus = u.mealStatus || { breakfast: 1, lunch: 1, dinner: 1 };
+
+      for (let [mealType, window] of Object.entries(mealWindows)) {
+        let currentCount = 1;
+        if (mealStatus[mealType] === false || mealStatus[mealType] === 0) {
+          currentCount = 0;
+        } else if (typeof mealStatus[mealType] === 'number') {
+          currentCount = mealStatus[mealType];
+        }
+
+        if (currentCount === 0) continue;
+
+        const mealControlDate = this.getMealControlDate(mealType);
+        if (this.isMealLocked(mealType, mealControlDate)) continue;
+
+        let overlapFound = false;
+        let conflictCourse = "";
+
+        for (let c of tomorrowClasses) {
+          if (hasOverlap(c.start, c.end, window.start, window.end)) {
+            overlapFound = true;
+            conflictCourse = c.course;
+            break;
+          }
+        }
+
+        if (overlapFound) {
+          conflicts.push({ mealType, conflictCourse });
+        }
+      }
+
+      if (conflicts.length > 0) {
+        const warningContainer = document.getElementById('mealCompletedWarningContainer');
+        if (warningContainer) {
+          warningContainer.style.display = 'block';
+
+          // Store conflicts array on the module to access on click
+          this._pendingAutoConflicts = conflicts;
+
+          let conflictsText = conflicts.map(c => `<strong>${c.mealType.toUpperCase()}</strong> (class conflict: ${c.conflictCourse})`).join(', ');
+
+          // Create warning elements
+          const aiCardHtml = `
+            <div id="aiAutoMealWarningCard" class="completed-meals-warning-card" style="
+              background: rgba(124, 58, 237, 0.05);
+              border: 1px solid rgba(124, 58, 237, 0.2);
+              backdrop-filter: blur(8px);
+              -webkit-backdrop-filter: blur(8px);
+              color: #5b21b6;
+              border-radius: 12px;
+              padding: 12px 16px;
+              display: flex;
+              flex-direction: column;
+              gap: 10px;
+              font-size: 13px;
+              font-weight: 400;
+              line-height: 1.45;
+              margin-bottom: var(--space-2);
+              box-shadow: 0 4px 12px rgba(124, 58, 237, 0.03);
+            ">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; color:#7c3aed;">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <div>
+                  <strong>🤖 AI Auto-Meal Optimizer:</strong> Tomorrow's schedule conflicts with meals: ${conflictsText}.
+                </div>
+              </div>
+              <div style="display:flex; justify-content:flex-end;">
+                <button class="btn btn-sm" style="background:#7c3aed; color:#fff; font-size:11px; padding:6px 12px; border-radius:6px; cursor:pointer; border:none; font-weight:600;" 
+                        onclick="DineDesk.userDashboard.confirmAutoMealToggles()">
+                  Approve Toggling OFF Conflict Meals
+                </button>
+              </div>
+            </div>
+          `;
+
+          // Check if AI card is already added to prevent duplicates
+          const existing = document.getElementById('aiAutoMealWarningCard');
+          if (existing) existing.remove();
+
+          warningContainer.innerHTML = aiCardHtml + warningContainer.innerHTML;
+        }
+      }
+
+    } catch (err) {
+      console.warn('[AutoMeal] Overlap check failed:', err);
+    }
+  },
+
+  async confirmAutoMealToggles() {
+    if (!this._pendingAutoConflicts || this._pendingAutoConflicts.length === 0) return;
+
+    try {
+      for (let c of this._pendingAutoConflicts) {
+        await db.ref(`dinings/${this.diningId}/users/${this.userId}/mealStatus/${c.mealType}`).set(0);
+        await Notifications.log(this.diningId, 'meal_toggled', `AI Auto Meal set ${c.mealType.toUpperCase()} OFF due to class overlap (${c.conflictCourse}) after user approval`, this.userId, this.userId);
+      }
+
+      this._pendingAutoConflicts = null;
+      
+      const aiCard = document.getElementById('aiAutoMealWarningCard');
+      if (aiCard) aiCard.remove();
+
+      Notifications.toast('success', 'AI Auto-Meal Applied', 'Conflict meals turned OFF successfully.');
+      this.refresh();
+    } catch (err) {
+      console.error(err);
+      Notifications.toast('error', 'Error', 'Failed to toggle conflict meals.');
+    }
+  },
+
+  /**
    * Refresh dashboard
    */
   refresh() {
@@ -1064,6 +1454,7 @@ const UserDashboard = {
     this.renderMealToggles();
     this.updateMyMealVisibility();
     this.renderRecentActivity(this.diningId);
+    this.checkAutoMealSchedule();
 
     const role = DineDesk.state.role;
     const userContent = document.getElementById('userDashboardContent');

@@ -76,6 +76,19 @@ const SettingsModule = {
     const managerBazarToggle = document.getElementById('settingsManagerBazarToggle');
     if (managerBazarToggle) managerBazarToggle.checked = s.managerBazarEnabled !== false;
 
+    // AI Assistant toggle states
+    const aiAssistantToggle = document.getElementById('settingsAiAssistantToggle');
+    if (aiAssistantToggle) aiAssistantToggle.checked = s.aiAssistantEnabled !== false;
+
+    const aiFileUploadToggle = document.getElementById('settingsAiFileUploadToggle');
+    if (aiFileUploadToggle) aiFileUploadToggle.checked = s.aiFileUploadEnabled !== false;
+
+    // Active History Start Date
+    const startDateInput = document.getElementById('settingsHistoryStartDate');
+    if (startDateInput) {
+      startDateInput.value = s.historyStartDate || '';
+    }
+
     // Mess Code display
     const codeDisplay = document.getElementById('settingsMessCodeDisplay');
     if (codeDisplay && this.info) {
@@ -273,6 +286,37 @@ const SettingsModule = {
       Notifications.toast('success', 'Settings Saved', enabled ? 'Manager added to bazar rotation.' : 'Manager removed from bazar rotation.');
     } catch (e) {
       Notifications.toast('error', 'Error', 'Failed to update setting.');
+    }
+  },
+
+  async toggleAiAssistant(enabled) {
+    try {
+      await db.ref(`dinings/${this.diningId}/settings/aiAssistantEnabled`).set(enabled);
+      Notifications.toast('success', 'AI Assistant', enabled ? 'AI Assistant enabled.' : 'AI Assistant disabled.');
+    } catch (error) {
+      Notifications.toast('error', 'Error', 'Failed to update setting.');
+    }
+  },
+
+  async toggleAiFileUpload(enabled) {
+    try {
+      await db.ref(`dinings/${this.diningId}/settings/aiFileUploadEnabled`).set(enabled);
+      Notifications.toast('success', 'AI File Upload', enabled ? 'AI File Upload enabled.' : 'AI File Upload disabled.');
+    } catch (error) {
+      Notifications.toast('error', 'Error', 'Failed to update setting.');
+    }
+  },
+
+  async saveHistoryStartDate(dateStr) {
+    const input = document.getElementById('settingsHistoryStartDate');
+    const val = (dateStr !== undefined) ? dateStr : (input ? input.value : '');
+
+    try {
+      await db.ref(`dinings/${this.diningId}/settings/historyStartDate`).set(val || null);
+      Notifications.toast('success', 'Settings Saved', 'Active history start date updated.');
+    } catch (e) {
+      console.error('[Settings] Error saving start date:', e);
+      Notifications.toast('error', 'Error', 'Failed to update start date.');
     }
   },
 

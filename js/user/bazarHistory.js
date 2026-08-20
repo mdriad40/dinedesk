@@ -27,15 +27,21 @@ const BazarHistoryModule = {
     this.selectedMonth = now.getMonth() + 1;
 
     try {
-      const infoSnap = await db.ref(`dinings/${this.diningId}/info/createdAt`).once('value');
-      const createdAt = infoSnap.val();
-      if (createdAt) {
-        this.createdDate = new Date(createdAt);
+      const startRef = await db.ref(`dinings/${this.diningId}/settings/historyStartDate`).once('value');
+      let startDateStr = startRef.val();
+      if (startDateStr) {
+        this.createdDate = new Date(startDateStr);
       } else {
-        this.createdDate = new Date(2026, 0, 1);
+        const infoSnap = await db.ref(`dinings/${this.diningId}/info/createdAt`).once('value');
+        const createdAt = infoSnap.val();
+        if (createdAt) {
+          this.createdDate = new Date(createdAt);
+        } else {
+          this.createdDate = new Date(2026, 0, 1);
+        }
       }
     } catch (e) {
-      console.error('[BazarHistoryModule] Fetch createdAt error:', e);
+      console.error('[BazarHistoryModule] Fetch start date error:', e);
       this.createdDate = new Date(2026, 0, 1);
     }
 
@@ -212,7 +218,7 @@ const BazarHistoryModule = {
     const shopperLabel = shoppers.length > 0 ? shoppers.join(', ') : 'N/A';
 
     // Combine all items from all entries into one preview string
-    const allItemsText = entries.map(e => e.items).filter(Boolean).join(', ');
+    const allItemsText = entries.map(e => (e.items || '').replace(/\r?\n/g, ', ')).filter(Boolean).join(', ');
     const shortPreview = allItemsText.length > 42 ? allItemsText.slice(0, 42) + '…' : allItemsText;
 
     const dateObj = new Date(date + 'T00:00:00');
@@ -225,7 +231,7 @@ const BazarHistoryModule = {
       <div class="bazar-item-row">
         <div class="bazar-item-index">${idx + 1}</div>
         <div class="bazar-item-info">
-          <div class="bazar-item-name">${e.items || 'N/A'}</div>
+          <div class="bazar-item-name">${Utils.formatBazarItems(e.items)}</div>
           <div class="bazar-item-shopper">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>

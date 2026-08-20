@@ -20,19 +20,27 @@ const SummaryModule = {
     this.diningId = diningId;
     this.userId = userId;
 
-    // Fetch creation date
-    db.ref(`dinings/${diningId}/info/createdAt`).once('value').then(snap => {
-      const val = snap.val();
-      if (val) {
-        this.createdDate = new Date(val);
+    // Fetch start date/creation date
+    Promise.all([
+      db.ref(`dinings/${diningId}/settings/historyStartDate`).once('value'),
+      db.ref(`dinings/${diningId}/info/createdAt`).once('value')
+    ]).then(([startSnap, infoSnap]) => {
+      const startDateStr = startSnap.val();
+      if (startDateStr) {
+        this.createdDate = new Date(startDateStr);
       } else {
-        this.createdDate = new Date();
+        const val = infoSnap.val();
+        if (val) {
+          this.createdDate = new Date(val);
+        } else {
+          this.createdDate = new Date();
+        }
       }
       this.populateYearDropdown();
       this.populateMonthDropdown();
       this.loadMonthData();
     }).catch(e => {
-      console.error('[SummaryModule] Fetch createdAt error, falling back:', e);
+      console.error('[SummaryModule] Fetch start date error, falling back:', e);
       this.populateYearDropdown();
       this.populateMonthDropdown();
       this.loadMonthData();
@@ -247,7 +255,7 @@ const SummaryModule = {
           userDeposits[d.userId] = (userDeposits[d.userId] || 0) + amount;
         } else if (d.type === 'other_costing') {
           userOtherCosts[d.userId] = (userOtherCosts[d.userId] || 0) + amount;
-        } else if (d.type === 'deduction') {
+        } else if (d.type === 'deduction' || d.type === 'friday_meal') {
           userDeductions[d.userId] = (userDeductions[d.userId] || 0) + amount;
         }
       });

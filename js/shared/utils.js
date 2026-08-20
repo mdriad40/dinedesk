@@ -8,7 +8,9 @@ const Utils = {
    */
   currency(amount) {
     const num = parseFloat(amount) || 0;
-    return '৳' + num.toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    const isNeg = num < 0;
+    const formatted = Math.abs(num).toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    return (isNeg ? '-৳' : '৳') + formatted;
   },
 
   /**
@@ -22,7 +24,11 @@ const Utils = {
    * Get today's date in YYYY-MM-DD format
    */
   today() {
-    return new Date().toISOString().split('T')[0];
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   },
 
   /**
@@ -148,7 +154,7 @@ const Utils = {
    */
   debounce(fn, delay = 300) {
     let timer;
-    return function(...args) {
+    return function (...args) {
       clearTimeout(timer);
       timer = setTimeout(() => fn.apply(this, args), delay);
     };
@@ -159,7 +165,7 @@ const Utils = {
    */
   throttle(fn, limit = 300) {
     let inThrottle = false;
-    return function(...args) {
+    return function (...args) {
       if (!inThrottle) {
         fn.apply(this, args);
         inThrottle = true;
@@ -248,6 +254,71 @@ const Utils = {
       return `${hours}h ${minutes}m remaining`;
     }
     return `${minutes}m remaining`;
+  },
+
+  /**
+   * Format bazar items list. If it has newlines, format as a bulleted list.
+   */
+  formatBazarItems(itemsStr) {
+    if (!itemsStr) return '—';
+    const lines = itemsStr.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    if (lines.length > 1) {
+      return `
+        <ul class="bazar-items-list-styled" style="margin: 6px 0 0 0; padding: 0 0 0 4px; list-style-position: inside; list-style-type: disc; display: flex; flex-direction: column; gap: 4px; font-weight: normal; font-size: inherit; text-align: left; line-height: 1.4;">
+          ${lines.map(line => `<li>${line}</li>`).join('')}
+        </ul>
+      `;
+    }
+    return itemsStr;
+  },
+
+  /**
+   * Format recent activity log details. If it's a long multi-line list (like bazar items),
+   * render as a collapsible list.
+   */
+  formatActivityDetails(details) {
+    if (!details) return '';
+    if (details.includes('\n')) {
+      const lines = details.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length > 1) {
+        // Look for header prefix like "Bazar ৳1234:"
+        const match = lines[0].match(/^(Bazar ৳[0-9,.]+:\s*)(.*)$/i);
+        let headerText = '';
+        let firstItem = '';
+        let listLines = [];
+
+        if (match) {
+          headerText = match[1];
+          firstItem = match[2];
+          listLines = [firstItem, ...lines.slice(1)].filter(Boolean);
+        } else {
+          listLines = lines;
+        }
+
+        if (listLines.length > 4) {
+          const uniqueId = 'activity-list-' + Math.random().toString(36).substr(2, 9);
+          return `
+            ${headerText ? `<div style="font-weight: var(--weight-semibold); margin-bottom: 2px;">${headerText}</div>` : ''}
+            <div class="bazar-items-collapsible-wrapper">
+              <ul id="${uniqueId}" class="bazar-items-list-styled collapsed">
+                ${listLines.map(line => `<li>${line}</li>`).join('')}
+              </ul>
+              <button class="bazar-items-toggle-btn" onclick="event.stopPropagation(); const el = document.getElementById('${uniqueId}'); const btn = this; if (el.classList.contains('collapsed')) { el.classList.remove('collapsed'); btn.innerHTML = 'Show Less <span>↑</span>'; } else { el.classList.add('collapsed'); btn.innerHTML = 'Show More <span>↓</span>'; }">
+                Show More <span>↓</span>
+              </button>
+            </div>
+          `;
+        } else {
+          return `
+            ${headerText ? `<div style="font-weight: var(--weight-semibold); margin-bottom: 2px;">${headerText}</div>` : ''}
+            <ul class="bazar-items-list-styled">
+              ${listLines.map(line => `<li>${line}</li>`).join('')}
+            </ul>
+          `;
+        }
+      }
+    }
+    return details;
   }
 };
 

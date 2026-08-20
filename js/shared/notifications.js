@@ -108,8 +108,8 @@ const Notifications = {
     list.innerHTML = filtered.map(n => {
       const iconBg = n.type === 'deposit' ? 'background:var(--accent-100);color:var(--accent-600);'
         : n.type === 'meal' ? 'background:var(--warning-100);color:var(--warning-600);'
-        : n.type === 'bazar' ? 'background:var(--primary-100);color:var(--primary-600);'
-        : 'background:var(--gray-100);color:var(--gray-600);';
+          : n.type === 'bazar' ? 'background:var(--primary-100);color:var(--primary-600);'
+            : 'background:var(--gray-100);color:var(--gray-600);';
 
       return `
         <div class="notification-item ${n.read ? '' : 'unread'}">
@@ -160,29 +160,50 @@ const Notifications = {
     this.toast('info', 'Notifications', 'All notifications marked as read');
   },
 
-  async log(diningId, action, details, performedBy, targetUserId = null, isSingle = false) {
+  async log(diningId, action, details, performedBy, targetUserId = null, isSingle = false, batchId = null) {
     if (!diningId) return;
-    const logData = {
+
+    // Build the global log entry (includes targetUserId so admin view can display member names)
+    const globalLogData = {
       action,
       details,
       performedBy: performedBy || 'system',
       timestamp: firebase.database.ServerValue.TIMESTAMP
     };
     if (targetUserId) {
-      logData.targetUserId = targetUserId;
+      globalLogData.targetUserId = targetUserId;
     }
     if (isSingle) {
-      logData.isSingle = true;
+      globalLogData.isSingle = true;
+    }
+    // batchId groups all log entries from the same save operation into one activity card
+    if (batchId) {
+      globalLogData.batchId = batchId;
     }
 
-    // Write to global logs
+    // Write to global dining logs
     const logRef = db.ref(`dinings/${diningId}/logs`).push();
-    await logRef.set(logData);
+    await logRef.set(globalLogData);
 
-    // If targetUserId is specified, also write to the user-specific logs
+    // If targetUserId is specified, write a SEPARATE fresh object to the user-specific logs.
+    // This is critical — sharing the same object reference causes Firebase to resolve
+    // ServerValue.TIMESTAMP at two different moments, producing mismatched timestamps.
+    // The per-user log intentionally omits targetUserId (it is implicit from the path).
     if (targetUserId) {
+      const userLogData = {
+        action,
+        details,
+        performedBy: performedBy || 'system',
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      };
+      if (isSingle) {
+        userLogData.isSingle = true;
+      }
+      if (batchId) {
+        userLogData.batchId = batchId;
+      }
       const userLogRef = db.ref(`dinings/${diningId}/users/${targetUserId}/logs`).push();
-      await userLogRef.set(logData);
+      await userLogRef.set(userLogData);
     }
   }
 };

@@ -13,6 +13,10 @@ const firebaseConfig = {
   measurementId: "G-4KJZHJE7EL"
 };
 
+// Gemini API Key for Smart Campus AI Features
+const GEMINI_API_KEY = "AQ.Ab8RN6JmUATIy9C08Z-X4hXwVNU618hga9Gi4OwiC_EdzDFWBQ";
+const GEMINI_MODEL = "gemini-3.5-flash";
+
 // Initialize Firebase
 const firebaseApp = firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -21,4 +25,4 @@ const db = firebase.database();
 // Persistence — keep user signed in across sessions
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-console.log('[DineDesk] Firebase initialized');
+console.log('[DineDesk] Firebase & Gemini configuration initialized');

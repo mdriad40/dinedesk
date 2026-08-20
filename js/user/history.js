@@ -3,14 +3,16 @@
    ============================================ */
 
 const HistoryModule = {
-  /**
-   * Initialize history for profile page
-   */
   init(diningId, userId) {
     this.diningId = diningId;
     this.userId = userId;
     this.mealsBreakdown = { breakfast: 0, lunch: 0, dinner: 0 };
     this.settings = {};
+    this.isAiProcessing = false;
+
+    this.selectedYear = new Date().getFullYear();
+    this.selectedMonth = new Date().getMonth() + 1;
+    this.createdDate = new Date(2026, 0, 1);
 
     // Listen to deposits for this user
     db.ref(`dinings/${diningId}/deposits`).orderByChild('userId').equalTo(userId).on('value', (snap) => {
@@ -26,12 +28,14 @@ const HistoryModule = {
     db.ref(`dinings/${diningId}/settings`).on('value', (snap) => {
       this.settings = snap.val() || {};
       if (this.currentUserData) this.renderProfile(this.currentUserData);
+      this.applyAiAssistantSettings();
     });
 
     // Listen to meals breakdown
     db.ref(`dinings/${diningId}/meals`).on('value', (snap) => {
       this.mealsBreakdown = { breakfast: 0, lunch: 0, dinner: 0 };
       const allMeals = snap.val() || {};
+      this.cachedMeals = allMeals;
       Object.values(allMeals).forEach(monthData => {
         Object.values(monthData).forEach(dayData => {
           Object.entries(dayData).forEach(([type, typeData]) => {
@@ -53,6 +57,9 @@ const HistoryModule = {
       if (user) {
         this.currentUserData = user;
         this.renderProfile(user);
+        if (window._aiRefreshGreeting) {
+          window._aiRefreshGreeting();
+        }
       }
     });
 
@@ -66,25 +73,39 @@ const HistoryModule = {
     db.ref(`dinings/${diningId}/info`).on('value', (snap) => {
       this.diningInfo = snap.val() || {};
       if (this.currentUserData) this.renderProfile(this.currentUserData);
-    });
 
-    // Listen to global logs for History page
-    db.ref(`dinings/${diningId}/logs`).orderByChild('timestamp').limitToLast(50).on('value', (snap) => {
-      const logs = [];
-      snap.forEach(child => {
-        logs.push(child.val());
-      });
-      logs.reverse();
-      this.globalLogs = logs;
-      this.renderHistoryPage();
+      const createdAt = this.diningInfo.createdAt;
+      this.createdDate = createdAt ? new Date(createdAt) : new Date(2026, 0, 1);
+      this.populateYearDropdown();
+      this.populateMonthDropdown();
     });
-
+    this.listenToLogs();
     // Setup password validation listeners
     this.setupPasswordValidation();
     // Setup profile info validation listeners
     this.setupProfileInfoValidation();
+
+    // Close dropdowns on outside click
+    if (!this._clickListenerAdded) {
+      document.addEventListener('click', () => {
+        const d1 = document.getElementById('historyMonthDropdown');
+        const d2 = document.getElementById('historyYearDropdown');
+        if (d1) d1.classList.remove('active');
+        if (d2) d2.classList.remove('active');
+      });
+      this._clickListenerAdded = true;
+    }
+    this.setupAiChatbotListeners();
   },
 
+  refresh() {
+    if (window._aiRefreshGreeting) {
+      window._aiRefreshGreeting();
+    }
+    if (window._aiChatManager) {
+      window._aiChatManager.init();
+    }
+  },
   /**
    * Render user profile header
    */
@@ -162,7 +183,7 @@ const HistoryModule = {
         userDeposit += amt;
       } else if (d.type === 'other_costing') {
         userOtherCost += amt;
-      } else if (d.type === 'deduction') {
+      } else if (d.type === 'deduction' || d.type === 'friday_meal') {
         userDeduction += amt;
       }
     });
@@ -221,6 +242,12 @@ const HistoryModule = {
           </div>
         </div>
       `;
+    }
+
+    // Set AI Auto Meal Toggle State (Dedicated AI Assistant page)
+    const aiToggle = document.getElementById('aiAutoMealToggle');
+    if (aiToggle) {
+      aiToggle.checked = !!user.autoMealEnabled;
     }
   },
 
@@ -406,12 +433,12 @@ const HistoryModule = {
           <div class="timeline-dot ${dotClass}"></div>
           <div class="timeline-content">
             <div class="timeline-date">${Utils.formatDate(d.date)} · ${Utils.timeAgo(d.timestamp)}</div>
-            <div class="flex items-center justify-between">
-              <div>
+            <div class="flex items-center justify-between" style="gap: var(--space-3);">
+              <div style="min-width: 0; flex: 1;">
                 <div class="timeline-title">${d.note || typeLabel}</div>
                 <div style="font-size:var(--font-xs); color:var(--text-tertiary); margin-top:2px;">${typeLabel}</div>
               </div>
-              <div style="font-weight:var(--weight-bold);color:${color};white-space:nowrap;">
+              <div style="font-weight:var(--weight-bold);color:${color};white-space:nowrap; flex-shrink: 0; text-align: right;">
                 ${sign}${Utils.currency(Math.abs(d.amount))}
               </div>
             </div>
@@ -424,12 +451,13 @@ const HistoryModule = {
   /**
    * Render meal history (monthly breakdown)
    */
-  renderMealHistory(diningId, userId) {
+  renderMealHistory(diningId, userId, cachedMeals = null) {
     const container = document.getElementById('profileMealHistory');
     if (!container) return;
 
-    db.ref(`dinings/${diningId}/meals`).once('value').then(snap => {
-      const allMeals = snap.val() || {};
+    const mealsToProcess = cachedMeals || this.cachedMeals;
+
+    const processMeals = (allMeals) => {
       const userMeals = [];
 
       // Collect all meals for this user
@@ -496,7 +524,15 @@ const HistoryModule = {
           </table>
         </div>
       `;
-    });
+    };
+
+    if (mealsToProcess) {
+      processMeals(mealsToProcess);
+    } else {
+      db.ref(`dinings/${diningId}/meals`).once('value').then(snap => {
+        processMeals(snap.val() || {});
+      });
+    }
   },
 
   /**
@@ -504,7 +540,13 @@ const HistoryModule = {
    */
   refresh() {
     if (this.diningId && this.userId) {
-      this.renderMealHistory(this.diningId, this.userId);
+      this.renderMealHistory(this.diningId, this.userId, this.cachedMeals);
+      // If we already have cached data, re-render profile immediately
+      // so refreshing the page while on profile doesn't show "Loading..."
+      if (this.currentUserData) {
+        this.renderProfile(this.currentUserData);
+      }
+      this.applyAiAssistantSettings();
     }
   },
 
@@ -514,15 +556,93 @@ const HistoryModule = {
   renderHistoryPage() {
     const container = document.getElementById('historyActivityTimeline');
     if (!container) return;
-
-    // Exclude meal updates and toggles from global history
-    const logs = (this.globalLogs || []).filter(log => {
+    // Exclude group updates and individual meal toggles (only process normal meal sheet updates)
+    const rawLogs = (this.globalLogs || []).filter(log => {
       const action = log.action || '';
-      return action !== 'meals_updated' && action !== 'meal_toggled' &&
-        action !== 'meal_completed' && action !== 'meals_updated_group';
+      if (action === 'meals_updated' || action === 'meal_toggled' ||
+        action === 'meal_completed' || action === 'meals_updated_group') {
+        return false;
+      }
+
+      // Filter by selected Month and Year
+      if (!log.timestamp) return false;
+      const logDate = new Date(log.timestamp);
+      const logYear = logDate.getFullYear();
+      const logMonth = logDate.getMonth() + 1;
+      return logYear === this.selectedYear && logMonth === this.selectedMonth;
     });
 
-    if (logs.length === 0) {
+    // Group logs by batchId
+    const groupedLogs = [];
+    const batches = {}; // batchId -> array of logs
+
+    rawLogs.forEach(log => {
+      if (log.batchId) {
+        if (!batches[log.batchId]) {
+          batches[log.batchId] = [];
+        }
+        batches[log.batchId].push(log);
+      } else {
+        // Deep copy to prevent mutating cached state
+        groupedLogs.push({ ...log });
+      }
+    });
+
+    // Process batches and convert them to summary log entries
+    Object.entries(batches).forEach(([batchId, batchList]) => {
+      // Sort batchList by timestamp just in case, use the first/latest log as the base
+      batchList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      const baseLog = { ...batchList[0] };
+
+      // Sum counts by meal type
+      const counts = { Breakfast: 0, Lunch: 0, Dinner: 0 };
+      let verb = 'updated';
+
+      batchList.forEach(item => {
+        const details = item.details || '';
+        // details pattern: "Updated Breakfast: 2 meals" or "Completed Lunch: 3 meals" or "2 Lunch saved"
+        const match = details.match(/(?:Updated|Completed)?\s*(\w+)\s*:\s*([\d.]+)\s*meals/i) ||
+          details.match(/([\d.]+)\s+(\w+)\s+(saved|added|completed)/i);
+
+        if (match) {
+          let type = '';
+          let count = 0;
+          if (match[2] && !isNaN(parseFloat(match[2]))) {
+            type = match[1];
+            count = parseFloat(match[2]);
+          } else {
+            type = match[2];
+            count = parseFloat(match[1]);
+            verb = match[3] || verb;
+          }
+
+          // Capitalize type
+          const capType = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+          if (counts[capType] !== undefined) {
+            counts[capType] += count;
+          }
+        }
+      });
+
+      // Build summary description, e.g. "13 Lunch & 12 Dinner saved"
+      const summaryParts = [];
+      Object.entries(counts).forEach(([type, count]) => {
+        if (count > 0) {
+          summaryParts.push(`${count} ${type}`);
+        }
+      });
+
+      if (summaryParts.length > 0) {
+        baseLog.details = `${summaryParts.join(' & ')} ${verb}`;
+      }
+
+      groupedLogs.push(baseLog);
+    });
+
+    // Re-sort groupedLogs by timestamp descending so the timeline is correctly ordered
+    groupedLogs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    if (groupedLogs.length === 0) {
       container.innerHTML = `
         <div class="empty-state" style="padding:var(--space-8) var(--space-4);">
           <div class="empty-state-icon">
@@ -537,7 +657,7 @@ const HistoryModule = {
       return;
     }
 
-    container.innerHTML = logs.map(log => {
+    let html = groupedLogs.map(log => {
       let title = 'Activity Log';
       let dotClass = '';
       let borderColor = 'var(--gray-300)';
@@ -577,6 +697,13 @@ const HistoryModule = {
         svgIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`;
       } else if (action === 'deduction_added') {
         title = 'Deduction Applied';
+        dotClass = 'danger';
+        borderColor = 'var(--danger-500)';
+        iconBg = 'var(--danger-50)';
+        iconColor = 'var(--danger-600)';
+        svgIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`;
+      } else if (action === 'friday_bazar_deducted') {
+        title = 'Friday Meal Deduction';
         dotClass = 'danger';
         borderColor = 'var(--danger-500)';
         iconBg = 'var(--danger-50)';
@@ -637,7 +764,7 @@ const HistoryModule = {
                 <span class="timeline-title" style="font-size: var(--font-base); font-weight: var(--weight-bold);">${title}</span>
                 <span class="timeline-date" style="margin-bottom: 0; white-space: nowrap;">${Utils.timeAgo(log.timestamp)}</span>
               </div>
-              <div class="timeline-desc" style="margin-top: var(--space-1.5); font-size: var(--font-sm); line-height: 1.4;">${log.details || ''}</div>
+              <div class="timeline-desc" style="margin-top: var(--space-1.5); font-size: var(--font-sm); line-height: 1.4;">${Utils.formatActivityDetails(log.details)}</div>
               <div style="font-size: 11px; color: var(--text-tertiary); margin-top: var(--space-2); display: flex; align-items: center; gap: 4px;">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <span>Performed by: <strong>${actor}</strong></span>
@@ -647,10 +774,663 @@ const HistoryModule = {
         </div>
       `;
     }).join('');
+
+    // Setup timeline collapse/expand controls
+    html += this._setupTimelineCollapse(container, groupedLogs.length);
+    container.innerHTML = html;
+  },
+
+  listenToLogs() {
+    if (!this.diningId) return;
+
+    if (this._logsRef) {
+      this._logsRef.off();
+    }
+
+    const startTimestamp = new Date(this.selectedYear, this.selectedMonth - 1, 1, 0, 0, 0, 0).getTime();
+    const endTimestamp = new Date(this.selectedYear, this.selectedMonth, 1, 0, 0, 0, 0).getTime() - 1;
+
+    this._logsRef = db.ref(`dinings/${this.diningId}/logs`)
+      .orderByChild('timestamp')
+      .startAt(startTimestamp)
+      .endAt(endTimestamp);
+
+    this._logsRef.on('value', (snap) => {
+      const logs = [];
+      snap.forEach(child => {
+        logs.push(child.val());
+      });
+      logs.reverse();
+      this.globalLogs = logs;
+      this.renderHistoryPage();
+    });
   },
 
   refreshHistoryPage() {
-    this.renderHistoryPage();
+    this.listenToLogs();
+  },
+
+  monthNames: [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ],
+
+  populateYearDropdown() {
+    const valueEl = document.getElementById('historyYearValue');
+    const menuEl = document.getElementById('historyYearMenu');
+    if (!valueEl || !menuEl) return;
+
+    const startYear = this.createdDate ? this.createdDate.getFullYear() : 2026;
+    const endYear = new Date().getFullYear();
+
+    let itemsHTML = '';
+    for (let y = startYear; y <= endYear; y++) {
+      const isSelected = y === this.selectedYear;
+      itemsHTML += `
+        <div class="custom-dropdown-item ${isSelected ? 'selected' : ''}" 
+             data-value="${y}" 
+             onclick="DineDesk.history.selectYear(${y})">
+          ${y}
+        </div>
+      `;
+    }
+    menuEl.innerHTML = itemsHTML;
+    valueEl.textContent = this.selectedYear;
+  },
+
+  selectYear(year) {
+    this.selectedYear = year;
+    const dropdown = document.getElementById('historyYearDropdown');
+    if (dropdown) dropdown.classList.remove('active');
+    this.populateYearDropdown();
+    this.populateMonthDropdown();
+    this.listenToLogs();
+  },
+
+  populateMonthDropdown() {
+    const valueEl = document.getElementById('historyMonthValue');
+    const menuEl = document.getElementById('historyMonthMenu');
+    if (!valueEl || !menuEl) return;
+
+    const startYear = this.createdDate ? this.createdDate.getFullYear() : 2026;
+    const currentYear = new Date().getFullYear();
+
+    let startMonth = 1;
+    let endMonth = 12;
+
+    if (this.selectedYear === startYear) {
+      startMonth = this.createdDate ? this.createdDate.getMonth() + 1 : 1;
+    }
+    if (this.selectedYear === currentYear) {
+      endMonth = new Date().getMonth() + 1;
+    }
+
+    if (this.selectedMonth < startMonth) {
+      this.selectedMonth = startMonth;
+    } else if (this.selectedMonth > endMonth) {
+      this.selectedMonth = endMonth;
+    }
+
+    let itemsHTML = '';
+    for (let m = startMonth; m <= endMonth; m++) {
+      const isSelected = m === this.selectedMonth;
+      itemsHTML += `
+        <div class="custom-dropdown-item ${isSelected ? 'selected' : ''}" 
+             data-value="${m}" 
+             onclick="DineDesk.history.selectMonth(${m})">
+          ${this.monthNames[m - 1]}
+        </div>
+      `;
+    }
+    menuEl.innerHTML = itemsHTML;
+    valueEl.textContent = this.monthNames[this.selectedMonth - 1];
+  },
+
+  selectMonth(month) {
+    this.selectedMonth = month;
+    const dropdown = document.getElementById('historyMonthDropdown');
+    if (dropdown) dropdown.classList.remove('active');
+    this.populateMonthDropdown();
+    this.listenToLogs();
+  },
+
+  _setupTimelineCollapse(container, displayLogsCount) {
+    if (displayLogsCount <= 4) {
+      container.classList.remove('collapsed');
+      return '';
+    }
+
+    const isFirstRender = !container.querySelector('.timeline-item');
+    const isCollapsed = isFirstRender ? true : container.classList.contains('collapsed');
+
+    if (isCollapsed) {
+      container.classList.add('collapsed');
+    } else {
+      container.classList.remove('collapsed');
+    }
+
+    if (!container.dataset.listenerAttached) {
+      container.addEventListener('click', (e) => {
+        const expandBtn = e.target.closest('.expand-btn');
+        const collapseBtn = e.target.closest('.collapse-btn');
+        if (expandBtn) {
+          container.classList.remove('collapsed');
+        } else if (collapseBtn) {
+          container.classList.add('collapsed');
+          const card = container.closest('.card');
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      });
+      container.dataset.listenerAttached = 'true';
+    }
+
+    return `
+      <div class="timeline-expand-wrapper">
+        <button class="timeline-action-btn expand-btn" type="button" title="Show More">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+      </div>
+      <div class="timeline-collapse-wrapper">
+        <button class="timeline-action-btn collapse-btn" type="button" title="Show Less">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        </button>
+      </div>
+    `;
+  },
+
+  // ─── AI CHATBOT & AUTO MEAL METHODS ──────────────────────
+
+  async toggleAiAutoMeal(checked) {
+    try {
+      await db.ref(`dinings/${this.diningId}/users/${this.userId}/autoMealEnabled`).set(checked);
+      Notifications.toast('success', 'Auto Meal Updated', `AI Auto Meal has been turned ${checked ? 'ON' : 'OFF'}.`);
+    } catch (err) {
+      console.error(err);
+      Notifications.toast('error', 'Error', 'Failed to update Auto Meal toggle.');
+    }
+  },
+
+  appendBotMessage(text) {
+    const win = document.getElementById('aiChatWindow');
+    if (!win) return;
+
+    // Remove loading dots if present
+    const loader = document.getElementById('aiChatLoader');
+    if (loader) loader.remove();
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const el = document.createElement('div');
+    el.className = 'ai-msg-row';
+    el.innerHTML = `
+      <div style="max-width: 85%;">
+        <div class="ai-chat-bubble-bot">${text}</div>
+        <div class="ai-msg-time">${timeStr}</div>
+      </div>
+    `;
+    win.appendChild(el);
+    win.scrollTop = win.scrollHeight;
+
+    // Save message to current session
+    if (window._aiChatManager) {
+      window._aiChatManager.saveMessage('bot', text, timeStr);
+    }
+  },
+
+  appendUserMessage(text) {
+    const win = document.getElementById('aiChatWindow');
+    if (!win) return;
+
+    // Hide welcome block on first message
+    const welcomeBlock = document.getElementById('aiWelcomeBlock');
+    if (welcomeBlock) welcomeBlock.style.display = 'none';
+
+    // Update history sidebar with first message text
+    if (window._aiAddHistoryEntry) window._aiAddHistoryEntry(text);
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const el = document.createElement('div');
+    el.className = 'ai-msg-row user-row';
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:flex-end;max-width: 85%;">
+        <div class="ai-chat-bubble-user">${text}</div>
+        <div class="ai-msg-time">${timeStr}</div>
+      </div>
+    `;
+    win.appendChild(el);
+    win.scrollTop = win.scrollHeight;
+
+    // Save message to current session
+    if (window._aiChatManager) {
+      window._aiChatManager.saveMessage('user', text, timeStr);
+    }
+  },
+
+  showChatLoading() {
+    const win = document.getElementById('aiChatWindow');
+    if (!win) return;
+    const el = document.createElement('div');
+    el.className = 'ai-msg-row';
+    el.id = 'aiChatLoader';
+    el.innerHTML = `
+      <div style="max-width: 85%;">
+        <div class="ai-chat-bubble-bot" style="display:flex;align-items:center;gap:6px;">
+          <span class="ai-loading-dots">
+            <span class="ai-loading-dot"></span>
+            <span class="ai-loading-dot"></span>
+            <span class="ai-loading-dot"></span>
+          </span>
+          <span style="font-size:0.75rem;color:#6B7280;">DineDesk AI is typing…</span>
+        </div>
+      </div>
+    `;
+    win.appendChild(el);
+    win.scrollTop = win.scrollHeight;
+  },
+
+  async sendAiChatMessage() {
+    if (this.isAiProcessing) return;
+    const input = document.getElementById('aiChatInput');
+    if (!input) return;
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    this.isAiProcessing = true;
+
+    // Disable inputs and send buttons
+    input.readOnly = true;
+    const btnSend = document.querySelector('.ai-send-btn');
+    if (btnSend) btnSend.disabled = true;
+
+    // Disable attach routine input/label if applicable
+    const uploadLabel = document.getElementById('aiRoutineUploadLabel');
+    if (uploadLabel) {
+      uploadLabel.style.pointerEvents = 'none';
+      uploadLabel.style.opacity = '0.5';
+    }
+
+    input.value = '';
+    this.appendUserMessage(msg);
+    this.showChatLoading();
+
+    try {
+      // 1. Fetch current status of meals
+      const statusSnap = await db.ref(`dinings/${this.diningId}/users/${this.userId}/mealStatus`).once('value');
+      const mealStatus = statusSnap.val() || { breakfast: 1, lunch: 1, dinner: 1 };
+
+      // 2. Fetch dining mess context details (rules, finances, bazaar) to answer general questions
+      let rules = "1. Turn off meals before deadline.\n2. Do bazar duties on time.";
+      if (this.settings && this.settings.rules) {
+        rules = this.settings.rules;
+      }
+
+      const userDeposit = (DineDesk.userDashboard && DineDesk.userDashboard.monthlyDeposit) || 0;
+      const mealRate = DineDesk.state.monthlyMealRate || 0;
+      const monthlyMeals = (DineDesk.userDashboard && DineDesk.userDashboard.monthlyMeals) || 0;
+      const rateMode = (this.settings && this.settings.rateMode) || 'market';
+      const fixedRates = rateMode === 'fixed' ? ((this.settings && this.settings.fixedRates) || null) : null;
+      const mealCost = Utils.calcMealCost(mealRate, monthlyMeals, (DineDesk.userDashboard && DineDesk.userDashboard.monthlyMealsBreakdown) || { breakfast: 0, lunch: 0, dinner: 0 }, fixedRates);
+      const otherCosting = (DineDesk.userDashboard && DineDesk.userDashboard.monthlyOtherCosting) || 0;
+      const deduction = (DineDesk.userDashboard && DineDesk.userDashboard.monthlyDeduction) || 0;
+      const totalCost = mealCost + otherCosting;
+      const balance = userDeposit - totalCost - deduction;
+
+      const profileContext = {
+        userName: this.currentUserData?.name || 'Member',
+        email: this.currentUserData?.email || '',
+        phone: this.currentUserData?.phone || '',
+        role: this.currentUserData?.role || 'member',
+        monthlyDeposit: userDeposit,
+        monthlyMealsCount: monthlyMeals,
+        mealsBreakdown: (DineDesk.userDashboard && DineDesk.userDashboard.monthlyMealsBreakdown) || { breakfast: 0, lunch: 0, dinner: 0 },
+        mealCost: mealCost,
+        otherCost: otherCosting,
+        deduction: deduction,
+        totalCost: totalCost,
+        balance: balance,
+        mealRate: mealRate
+      };
+
+      // Get recent bazaar transactions for context
+      const bazarSnap = await db.ref(`dinings/${this.diningId}/bazar`).once('value');
+      const bazaarData = bazarSnap.val() || {};
+      const recentExpenses = Object.values(bazaarData).slice(-10).map(b => ({
+        date: b.date || '',
+        shopper: b.shopper || '',
+        amount: b.amount || 0,
+        item: b.item || (b.items && b.items[0]?.name) || 'Bazar Item'
+      }));
+
+      const prompt = `
+        User prompt/question: "${msg}"
+        
+        CONTEXT DATA FOR THIS USER & MESS:
+        - Current User Profile & Stats: ${JSON.stringify(profileContext, null, 2)}
+        - Mess Rules: "${rules}"
+        - Recent Bazaar Purchases: ${JSON.stringify(recentExpenses, null, 2)}
+        - Typical Menu: Breakfast is Khichuri/Egg, Lunch is Rice/Chicken/Dal, Dinner is Rice/Fish or Beef/Dal.
+        - Current Meal Status: Breakfast: ${mealStatus.breakfast || 0}, Lunch: ${mealStatus.lunch || 0}, Dinner: ${mealStatus.dinner || 0}
+        
+        INSTRUCTIONS:
+        1. If the user wants to turn a meal ON or OFF, output the intent "toggle_meal" and specify which meals to change.
+        2. If the user is asking a general question about their balance, cost, dining rules, recent bazaar purchases, menu, or statistics, answer it accurately using the CONTEXT DATA. Be friendly, concise, and helpful. Output intent "general".
+        3. LANGUAGE RULE: Always respond in Bengali (বাংলা) by default, even if the user asks their question in English or any other language. However, if the user explicitly requests you to talk or respond in a different specific language (e.g., "speak in English", "ইংরেজিতে উত্তর দাও", "respond in Arabic"), then you must override the default and reply in that requested language.
+      `;
+
+      const systemInstruction = "You are DineDesk AI, a helpful mess chatbot assistant. Always respond in Bengali by default unless the user explicitly requests another language. Reply friendly and structure outputs.";
+
+      const schema = {
+        type: "OBJECT",
+        properties: {
+          intent: { type: "STRING", enum: ["toggle_meal", "general"] },
+          mealsToToggle: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                mealType: { type: "STRING", enum: ["breakfast", "lunch", "dinner"] },
+                status: { type: "STRING", enum: ["ON", "OFF"] }
+              },
+              required: ["mealType", "status"]
+            }
+          },
+          responseMessage: { type: "STRING" }
+        },
+        required: ["intent", "responseMessage"]
+      };
+
+      const result = await DineDesk.aiControl._callGemini(prompt, systemInstruction, schema);
+
+      this.appendBotMessage(result.responseMessage);
+
+      // Render confirmation buttons instead of writing directly to the database
+      if (result.intent === 'toggle_meal' && result.mealsToToggle && result.mealsToToggle.length > 0) {
+        let buttonsHtml = '<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">';
+        result.mealsToToggle.forEach(item => {
+          const statusVal = item.status === 'ON' ? 1 : 0;
+          const label = item.mealType.charAt(0).toUpperCase() + item.mealType.slice(1);
+          buttonsHtml += `
+            <button class="btn btn-sm btn-outline-primary" style="font-size:var(--font-xs); padding:4px 10px; cursor:pointer;"
+                    onclick="DineDesk.history.confirmMealToggle('${item.mealType}', ${statusVal})">
+              Confirm ${label} ${item.status}
+            </button>
+          `;
+        });
+        buttonsHtml += '</div>';
+        this.appendBotMessage(buttonsHtml);
+      }
+
+    } catch (error) {
+      console.error(error);
+      this.appendBotMessage("Sorry, I encountered an error trying to process your command: " + error.message);
+    } finally {
+      this.isAiProcessing = false;
+
+      // Ensure loader is removed if it wasn't already removed by appendBotMessage
+      const loader = document.getElementById('aiChatLoader');
+      if (loader) loader.remove();
+
+      input.readOnly = false;
+      if (btnSend) btnSend.disabled = false;
+      if (uploadLabel) {
+        uploadLabel.style.pointerEvents = '';
+        uploadLabel.style.opacity = '';
+      }
+
+      const win = document.getElementById('aiChatWindow');
+      if (win) win.scrollTop = win.scrollHeight;
+      input.focus();
+    }
+  },
+
+  async handleRoutineUpload(event) {
+    if (this.isAiProcessing) return;
+    const file = event.target.files[0];
+    if (!file) return;
+
+    this.isAiProcessing = true;
+
+    // Disable inputs and send buttons
+    const input = document.getElementById('aiChatInput');
+    if (input) input.readOnly = true;
+    const btnSend = document.querySelector('.ai-send-btn');
+    if (btnSend) btnSend.disabled = true;
+
+    // Disable attach routine input/label
+    const uploadLabel = document.getElementById('aiRoutineUploadLabel');
+    if (uploadLabel) {
+      uploadLabel.style.pointerEvents = 'none';
+      uploadLabel.style.opacity = '0.5';
+    }
+
+    this.appendUserMessage("📎 Sent a routine image.");
+    this.showChatLoading();
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target.result.split(',')[1];
+
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${typeof GEMINI_MODEL !== 'undefined' ? GEMINI_MODEL : 'gemini-3.5-flash'}:generateContent?key=${GEMINI_API_KEY}`;
+
+        const requestBody = {
+          contents: [
+            {
+              parts: [
+                { text: "Extract the weekly class schedule / exam routine from this image. Group courses by Day of the Week (e.g. Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday) with course code, start, and end time in 24h format." },
+                { inlineData: { mimeType: "image/jpeg", data: base64 } }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                schedule: {
+                  type: "OBJECT",
+                  properties: {
+                    Sunday: { type: "ARRAY", items: { type: "OBJECT", properties: { course: { type: "STRING" }, start: { type: "STRING" }, end: { type: "STRING" } }, required: ["course", "start", "end"] } },
+                    Monday: { type: "ARRAY", items: { type: "OBJECT", properties: { course: { type: "STRING" }, start: { type: "STRING" }, end: { type: "STRING" } }, required: ["course", "start", "end"] } },
+                    Tuesday: { type: "ARRAY", items: { type: "OBJECT", properties: { course: { type: "STRING" }, start: { type: "STRING" }, end: { type: "STRING" } }, required: ["course", "start", "end"] } },
+                    Wednesday: { type: "ARRAY", items: { type: "OBJECT", properties: { course: { type: "STRING" }, start: { type: "STRING" }, end: { type: "STRING" } }, required: ["course", "start", "end"] } },
+                    Thursday: { type: "ARRAY", items: { type: "OBJECT", properties: { course: { type: "STRING" }, start: { type: "STRING" }, end: { type: "STRING" } }, required: ["course", "start", "end"] } },
+                    Friday: { type: "ARRAY", items: { type: "OBJECT", properties: { course: { type: "STRING" }, start: { type: "STRING" }, end: { type: "STRING" } }, required: ["course", "start", "end"] } },
+                    Saturday: { type: "ARRAY", items: { type: "OBJECT", properties: { course: { type: "STRING" }, start: { type: "STRING" }, end: { type: "STRING" } }, required: ["course", "start", "end"] } }
+                  }
+                },
+                message: { type: "STRING" }
+              },
+              required: ["schedule", "message"]
+            }
+          }
+        };
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) throw new Error("Gemini failed to read routine.");
+
+        const data = await response.json();
+        const parsed = JSON.parse(data.candidates[0].content.parts[0].text);
+
+        // Store parsed schedule in temporary property to avoid direct DB write from AI
+        this._pendingSchedule = parsed.schedule;
+
+        let preview = `<div style="font-size:var(--font-xs); color:var(--text-secondary); margin-bottom:8px; border-left:2px solid var(--primary-300); padding-left:8px;"><strong>Extracted Classes:</strong>`;
+        let count = 0;
+        Object.entries(parsed.schedule).forEach(([day, courses]) => {
+          if (courses && courses.length > 0) {
+            count++;
+            preview += `<br>• <strong>${day}</strong>: ${courses.map(c => `${c.course} (${c.start}-${c.end})`).join(', ')}`;
+          }
+        });
+        if (count === 0) {
+          preview += `<br>No classes identified.`;
+        }
+        preview += `</div>`;
+
+        this.appendBotMessage(`
+          🎉 **Routine Parsed Successfully!**<br>${parsed.message || 'I have extracted your weekly schedule. Please verify and save below:'}
+          ${preview}
+          <div style="margin-top:8px;">
+            <button class="btn btn-sm btn-primary" style="cursor:pointer;" onclick="DineDesk.history.saveExtractedSchedule()">
+              Save Schedule to Profile
+            </button>
+          </div>
+        `);
+
+      } catch (err) {
+        console.error(err);
+        this.appendBotMessage("Failed to parse routine. Make sure it is a clear JPEG routine image.");
+      } finally {
+        this.isAiProcessing = false;
+
+        // Ensure loader is removed
+        const loader = document.getElementById('aiChatLoader');
+        if (loader) loader.remove();
+
+        if (input) input.readOnly = false;
+        if (btnSend) btnSend.disabled = false;
+        if (uploadLabel) {
+          uploadLabel.style.pointerEvents = '';
+          uploadLabel.style.opacity = '';
+        }
+
+        const win = document.getElementById('aiChatWindow');
+        if (win) win.scrollTop = win.scrollHeight;
+        if (input) input.focus();
+
+        // Reset the file input value so selecting the same file triggers the change event again
+        event.target.value = '';
+      }
+    };
+    reader.onerror = () => {
+      this.isAiProcessing = false;
+      const loader = document.getElementById('aiChatLoader');
+      if (loader) loader.remove();
+      if (input) input.readOnly = false;
+      if (btnSend) btnSend.disabled = false;
+      if (uploadLabel) {
+        uploadLabel.style.pointerEvents = '';
+        uploadLabel.style.opacity = '';
+      }
+      this.appendBotMessage("Failed to read routine file.");
+    };
+    reader.readAsDataURL(file);
+  },
+
+  setupAiChatbotListeners() {
+    if (this._aiChatbotListenersAttached) return;
+    this._aiChatbotListenersAttached = true;
+
+    const btnSend = document.getElementById('btnSendAiChat');
+    const input = document.getElementById('aiChatInput');
+    const toggle = document.getElementById('aiAutoMealToggle');
+    const btnUpload = document.getElementById('btnUploadRoutine');
+    const fileInput = document.getElementById('aiRoutineUploadInput');
+
+    if (btnSend) {
+      btnSend.addEventListener('click', () => this.sendAiChatMessage());
+    }
+    if (input) {
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          this.sendAiChatMessage();
+        }
+      });
+    }
+    if (toggle) {
+      toggle.addEventListener('change', (e) => {
+        this.toggleAiAutoMeal(e.target.checked);
+      });
+    }
+    if (btnUpload && fileInput) {
+      btnUpload.addEventListener('click', () => {
+        fileInput.click();
+      });
+      fileInput.addEventListener('change', (e) => this.handleRoutineUpload(e));
+    }
+  },
+
+  async confirmMealToggle(mealType, statusVal) {
+    try {
+      await db.ref(`dinings/${this.diningId}/users/${this.userId}/mealStatus/${mealType}`).set(statusVal);
+      await Notifications.log(this.diningId, 'meal_toggled', `${mealType.toUpperCase()} set ${statusVal ? 'ON' : 'OFF'} via chatbot user confirmation`, this.userId, this.userId);
+      this.appendBotMessage(`✅ Database Updated! Turned **${mealType.toUpperCase()}** ${statusVal ? 'ON' : 'OFF'}.`);
+      if (DineDesk.userDashboard) DineDesk.userDashboard.refresh();
+    } catch (err) {
+      console.error(err);
+      this.appendBotMessage("Failed to update database: " + err.message);
+    }
+  },
+
+  async saveExtractedSchedule() {
+    if (!this._pendingSchedule) {
+      this.appendBotMessage("No pending schedule found to save.");
+      return;
+    }
+    try {
+      await db.ref(`dinings/${this.diningId}/users/${this.userId}/profile/classSchedule`).set(this._pendingSchedule);
+      this._pendingSchedule = null;
+      this.appendBotMessage("✅ Class schedule successfully written to your profile! If Auto-Meal is enabled, conflict alerts will show on your dashboard.");
+      if (DineDesk.userDashboard) DineDesk.userDashboard.refresh();
+    } catch (err) {
+      console.error(err);
+      this.appendBotMessage("Failed to write to database: " + err.message);
+    }
+  },
+
+  applyAiAssistantSettings() {
+    const s = this.settings;
+    const isAiEnabled = s.aiAssistantEnabled !== false;
+    const isUploadEnabled = s.aiFileUploadEnabled !== false;
+    const isAdmin = DineDesk.state.role === 'admin';
+
+    // 1. Navigation element visibility
+    const aiNavBtn = document.getElementById('nav-item-aiassistant');
+    if (aiNavBtn) {
+      aiNavBtn.style.display = (isAdmin || isAiEnabled) ? 'flex' : 'none';
+    }
+
+    // 2. Routing block
+    if (!isAdmin && !isAiEnabled && DineDesk.router.currentPage === 'aiassistant') {
+      DineDesk.router.navigate('dashboard');
+    }
+
+    // 3. File upload button, instruction, and badge visibility
+    const uploadLabel = document.getElementById('aiRoutineUploadLabel');
+    if (uploadLabel) {
+      uploadLabel.style.display = isUploadEnabled ? 'inline-flex' : 'none';
+    }
+    const uploadRow = document.getElementById('aiInputUploadRow');
+    if (uploadRow) {
+      uploadRow.style.display = isUploadEnabled ? 'flex' : 'none';
+    }
+    const uploadBadge = document.getElementById('aiRoutineUploadBadge');
+    if (uploadBadge) {
+      uploadBadge.style.display = isUploadEnabled ? 'flex' : 'none';
+    }
+    const uploadInstruction = document.getElementById('aiRoutineUploadInstruction');
+    if (uploadInstruction) {
+      uploadInstruction.style.display = isUploadEnabled ? 'inline' : 'none';
+    }
+
+    // 4. Hide "Enable AI Auto Meal System" toggle bar if file upload is turned off
+    const autoMealBar = document.getElementById('aiAutoMealToggleBar');
+    if (autoMealBar) {
+      autoMealBar.style.display = isUploadEnabled ? 'flex' : 'none';
+    }
   }
 };
 

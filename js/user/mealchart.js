@@ -30,18 +30,23 @@ const MealChartModule = {
     this.selectedDay = now.getDate();
 
     try {
-      // Fetch dining creation date
-      const infoSnap = await db.ref(`dinings/${this.diningId}/info/createdAt`).once('value');
-      const createdAt = infoSnap.val();
-
-      if (createdAt) {
-        this.createdDate = new Date(createdAt);
+      // Fetch history start date or dining creation date
+      const startRef = await db.ref(`dinings/${this.diningId}/settings/historyStartDate`).once('value');
+      let startDateStr = startRef.val();
+      if (startDateStr) {
+        this.createdDate = new Date(startDateStr);
       } else {
-        // Fallback to Jan 1, 2026
-        this.createdDate = new Date(2026, 0, 1);
+        const infoSnap = await db.ref(`dinings/${this.diningId}/info/createdAt`).once('value');
+        const createdAt = infoSnap.val();
+        if (createdAt) {
+          this.createdDate = new Date(createdAt);
+        } else {
+          // Fallback to Jan 1, 2026
+          this.createdDate = new Date(2026, 0, 1);
+        }
       }
     } catch (e) {
-      console.error('[MealChartModule] Fetch createdAt error, falling back:', e);
+      console.error('[MealChartModule] Fetch start date error, falling back:', e);
       this.createdDate = new Date(2026, 0, 1);
     }
 

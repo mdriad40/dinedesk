@@ -45,6 +45,9 @@ window.DineDesk = {
   mealChart: MealChartModule,
   bazarHistory: BazarHistoryModule,
   summary: SummaryModule,
+  fridayMeals: null,
+  fridayMealPage: null,
+  smsAlert: null,
 
   /**
    * Initialize the app — called on dashboard.html load
@@ -64,38 +67,61 @@ window.DineDesk = {
       console.log('[DineDesk] Authenticated:', user.email);
 
       try {
-        // Find user's dining via email mapping
+        // ── Step 1: Fetch mapping + user data (sequential, small payloads) ──
         const emailKey = Utils.encodeEmail(user.email);
         const mappingSnap = await db.ref(`userMappings/emailToDining/${emailKey}`).once('value');
         const mapping = mappingSnap.val();
 
         if (!mapping) {
           console.log('[DineDesk] No dining mapping found. Showing onboarding...');
-          // Fetch user details from users/{uid}
           const userProfileSnap = await db.ref(`users/${user.uid}`).once('value');
           const profile = userProfileSnap.val() || { name: user.displayName || 'User', email: user.email };
-          // Hide loader, show onboardingPage
           document.getElementById('pageLoader').style.display = 'none';
           document.getElementById('onboardingPage').style.display = 'flex';
-          
           if (window.Onboarding) {
-            Onboarding.init({
-              uid: user.uid,
-              name: profile.name,
-              email: profile.email,
-              phone: profile.phone || ''
-            });
+            Onboarding.init({ uid: user.uid, name: profile.name, email: profile.email, phone: profile.phone || '' });
           }
           return;
         }
-
         this.state.diningId = mapping.diningId;
-        this.state.userId = mapping.userId;
+        // Support impersonation/impersonating a member
+        const urlParams = new URLSearchParams(window.location.search);
+        const impersonateUserId = urlParams.get('impersonate');
 
-        // Get user role and info
-        const userSnap = await db.ref(`dinings/${mapping.diningId}/users/${mapping.userId}`).once('value');
+        if (impersonateUserId) {
+          const targetSnap = await db.ref(`dinings/${mapping.diningId}/users/${impersonateUserId}`).once('value');
+          if (targetSnap.exists()) {
+            this.state.userId = impersonateUserId;
+            console.log('[DineDesk] Impersonating member:', impersonateUserId);
+          } else {
+            this.state.userId = mapping.userId;
+          }
+        } else {
+          this.state.userId = mapping.userId;
+        }
+
+        const diningId = this.state.diningId;
+        const userId = this.state.userId;
+
+        const [
+          userSnap,
+          bazarSnap,
+          mealsSnap,
+          usersSnap,
+          settingsSnap,
+          depositsSnap,
+          infoSnap
+        ] = await Promise.all([
+          db.ref(`dinings/${diningId}/users/${userId}`).once('value'),
+          db.ref(`dinings/${diningId}/bazar`).once('value'),
+          db.ref(`dinings/${diningId}/meals`).once('value'),
+          db.ref(`dinings/${diningId}/users`).once('value'),
+          db.ref(`dinings/${diningId}/settings`).once('value'),
+          db.ref(`dinings/${diningId}/deposits`).once('value'),
+          db.ref(`dinings/${diningId}/info`).once('value')
+        ]);
+
         const userData = userSnap.val();
-
         if (!userData) {
           console.error('[DineDesk] User data not found');
           Notifications.toast('error', 'Error', 'Your account data was not found.');
@@ -105,23 +131,197 @@ window.DineDesk = {
 
         this.state.role = userData.role || 'user';
         this.state.userJoinedAt = userData.createdAt || null;
-        console.log('[DineDesk] Role:', this.state.role, '| Dining:', mapping.diningId);
+        console.log('[DineDesk] Role:', this.state.role, '| Dining:', diningId);
 
-        // Setup the UI
+        // ── Step 3: Pre-calculate meal rate so stats show correct values immediately ──
+        const allUsers = usersSnap.val() || {};
+        const settings = settingsSnap.val() || {};
+        const isManagerMealEnabled = !!settings.managerMealEnabled;
+        const rateMode = settings.rateMode || 'market';
+        const currentMonth = Utils.currentMonth();
+
+        const bazars = bazarSnap.val() || {};
+        const meals = mealsSnap.val() || {};
+
+        if (rateMode === 'fixed') {
+          const trackedMeals = settings.trackedMeals || { breakfast: true, lunch: true, dinner: true };
+          const fixedRates = settings.fixedRates || { breakfast: 0, lunch: 0, dinner: 0 };
+          const activeRates = [];
+          if (trackedMeals.breakfast) activeRates.push(fixedRates.breakfast || 0);
+          if (trackedMeals.lunch) activeRates.push(fixedRates.lunch || 0);
+          if (trackedMeals.dinner) activeRates.push(fixedRates.dinner || 0);
+          const avgRate = activeRates.length > 0
+            ? activeRates.reduce((a, b) => a + b, 0) / activeRates.length : 0;
+          this.state.mealRate = avgRate;
+          this.state.monthlyMealRate = avgRate;
+        } else {
+          let totalBazar = 0, totalMeals = 0;
+          let monthlyBazar = 0, monthlyMeals = 0;
+
+          Object.values(bazars).forEach(b => {
+            totalBazar += Utils.num(b.amount);
+            if (b.date && b.date.startsWith(currentMonth)) monthlyBazar += Utils.num(b.amount);
+          });
+          Object.values(meals).forEach(monthData => {
+            Object.values(monthData).forEach(dayData => {
+              Object.values(dayData).forEach(typeData => {
+                if (typeof typeData === 'object') {
+                  Object.entries(typeData).forEach(([uId, c]) => {
+                    const u = allUsers[uId];
+                    if (u && u.role === 'admin' && !isManagerMealEnabled) return;
+                    totalMeals += parseInt(c) || 0;
+                  });
+                }
+              });
+            });
+          });
+          const monthData = meals[currentMonth] || {};
+          Object.values(monthData).forEach(dayData => {
+            Object.values(dayData).forEach(typeData => {
+              if (typeof typeData === 'object') {
+                Object.entries(typeData).forEach(([uId, c]) => {
+                  const u = allUsers[uId];
+                  if (u && u.role === 'admin' && !isManagerMealEnabled) return;
+                  monthlyMeals += parseInt(c) || 0;
+                });
+              }
+            });
+          });
+
+          this.state.mealRate = Utils.calcMealRate(totalBazar, totalMeals);
+          this.state.totalMeals = totalMeals;
+          this.state.totalBazar = totalBazar;
+          this.state.monthlyMealRate = monthlyMeals > 0 ? monthlyBazar / monthlyMeals : 0;
+        }
+
+        // Pre-calculate total deposits
+        let totalDeposit = 0;
+        const allDeposits = depositsSnap.val() || {};
+        Object.values(allDeposits).forEach(d => {
+          if (d.type === 'deposit') totalDeposit += Utils.num(d.amount);
+        });
+        this.state.totalDeposit = totalDeposit;
+
+        console.log('[DineDesk] Meal Rate (prefetched):', this.state.mealRate.toFixed(2),
+          '| Monthly:', this.state.monthlyMealRate.toFixed(2));
+
+        // ── Step 4: Setup UI & modules ──
         this._setupUI(userData);
+        this._initModules(diningId, userId, mealsSnap.val() || {});
 
-        // Initialize all modules
-        this._initModules(mapping.diningId, mapping.userId);
+        // ── Step 4b: Inject prefetched data directly into UserDashboard ──
+        // _initModules() → UserDashboard.init() resets all data (userData=null, monthly=0 etc.)
+        // and sets up Firebase .on() listeners that fire async (300-500ms later).
+        // We bypass this wait by directly seeding the already-fetched data so the first
+        // render shows complete data with no intermediate "Loading..." / skeleton state.
+        UserDashboard.userData = userData;
+        UserDashboard.settings = settings;
 
-        // Show the app shell, hide loader
+        // Process per-user monthly deposits from the already-fetched deposits snapshot
+        {
+          let mDeposit = 0, mOtherCost = 0, mDeduction = 0;
+          const uDepositsArr = [];
+          const allDepsObj = depositsSnap.val() || {};
+          Object.values(allDepsObj).forEach(d => {
+            if (d.userId === userId) {
+              uDepositsArr.push(d);
+              if (d.date && d.date.startsWith(currentMonth)) {
+                const amt = Math.abs(Utils.num(d.amount));
+                if (d.type === 'deposit') mDeposit += amt;
+                else if (d.type === 'other_costing') mOtherCost += amt;
+                else if (d.type === 'deduction') mDeduction += amt;
+              }
+            }
+          });
+          UserDashboard.userDepositsData = uDepositsArr;
+          UserDashboard.monthlyDeposit = mDeposit;
+          UserDashboard.monthlyOtherCosting = mOtherCost;
+          UserDashboard.monthlyDeduction = mDeduction;
+        }
+
+        // Process per-user monthly meals from the already-fetched meals snapshot
+        {
+          const monthMealsData = (mealsSnap.val() || {})[currentMonth] || {};
+          UserDashboard.monthMealsData = monthMealsData;
+          let mMeals = 0;
+          const mBreakdown = { breakfast: 0, lunch: 0, dinner: 0 };
+          Object.values(monthMealsData).forEach(dayData => {
+            Object.entries(dayData).forEach(([type, typeData]) => {
+              if (typeof typeData === 'object' && typeData[userId] !== undefined) {
+                const count = parseFloat(typeData[userId]) || 0;
+                mMeals += count;
+                if (mBreakdown[type] !== undefined) mBreakdown[type] += count;
+              }
+            });
+          });
+          UserDashboard.monthlyMeals = mMeals;
+          UserDashboard.monthlyMealsBreakdown = mBreakdown;
+        }
+
+        // Mark activity as ready — Firebase listeners will update it once they fire.
+        // Setting this true prevents the skeleton from showing on the first paint.
+        UserDashboard._activityDataReady = true;
+
+        // Trigger immediate renders with the seeded data — no waiting for Firebase callbacks
+        UserDashboard.renderStats();
+        UserDashboard.renderMealToggles();
+        UserDashboard.renderRecentActivity(diningId);
+
+        // ── Step 4c: Inject prefetched data directly into HistoryModule ──
+        // This prevents "Loading..." placeholders on the Profile page when refreshing the page on the Profile tab.
+        HistoryModule.currentUserData = userData;
+        HistoryModule.settings = settings;
+        HistoryModule.diningInfo = infoSnap.val() || {};
+        HistoryModule.usersMap = usersSnap.val() || {};
+        HistoryModule.cachedMeals = mealsSnap.val() || {};
+
+        // Process per-user deposits list (filter and sort descending by timestamp)
+        {
+          const uDepositsArr = [];
+          const allDepsObj = depositsSnap.val() || {};
+          Object.values(allDepsObj).forEach(d => {
+            if (d.userId === userId) {
+              uDepositsArr.push(d);
+            }
+          });
+          uDepositsArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+          HistoryModule.userDepositsList = uDepositsArr;
+        }
+
+        // Process per-user meals breakdown (for all months, matching HistoryModule.init logic)
+        {
+          const mBreakdown = { breakfast: 0, lunch: 0, dinner: 0 };
+          const allMeals = mealsSnap.val() || {};
+          Object.values(allMeals).forEach(monthData => {
+            Object.values(monthData).forEach(dayData => {
+              Object.entries(dayData).forEach(([type, typeData]) => {
+                if (typeof typeData === 'object' && typeData[userId] !== undefined) {
+                  const count = parseFloat(typeData[userId]) || 0;
+                  if (mBreakdown[type] !== undefined) {
+                    mBreakdown[type] += count;
+                  }
+                }
+              });
+            });
+          });
+          HistoryModule.mealsBreakdown = mBreakdown;
+        }
+
+        // Trigger immediate render of profile elements and deposit history if they are present
+        HistoryModule.renderProfile(userData);
+        if (HistoryModule.userDepositsList) {
+          HistoryModule.renderDepositHistory(HistoryModule.userDepositsList);
+        }
+
+        // ── Step 5: Hide loader and show the fully-populated shell ──
         document.getElementById('pageLoader').style.display = 'none';
         document.getElementById('appShell').style.display = 'flex';
 
         // Initialize router
         Router.init(this.state.role);
 
-        // Calculate initial meal rate
-        await this._calcMealRate();
+        // ── Step 5: Setup reactive listeners for live updates ──
+        this._setupLiveListeners(diningId);
 
         // Setup online/offline detection
         this._setupConnectivity();
@@ -178,7 +378,6 @@ window.DineDesk = {
       }
     }
 
-    // Hide Meals and Finance in bottom nav for non-admin to keep exactly 3 bottom nav items (Home, Dining, Profile)
     const bottomMealsBtn = document.querySelector('.bottom-nav-item[data-page="meals"]');
     if (bottomMealsBtn) {
       bottomMealsBtn.style.display = isAdmin ? 'flex' : 'none';
@@ -186,6 +385,10 @@ window.DineDesk = {
     const bottomFinanceBtn = document.querySelector('.bottom-nav-item[data-page="finance"]');
     if (bottomFinanceBtn) {
       bottomFinanceBtn.style.display = isAdmin ? 'flex' : 'none';
+    }
+    const bottomAssistBtn = document.querySelector('.bottom-nav-item[data-page="aiassistant"]');
+    if (bottomAssistBtn) {
+      bottomAssistBtn.style.display = isAdmin ? 'none' : 'flex';
     }
 
     // Hide mobile menu button (hamburger menu on the left) for non-admin
@@ -198,7 +401,7 @@ window.DineDesk = {
   /**
    * Initialize all modules
    */
-  _initModules(diningId, userId) {
+  _initModules(diningId, userId, mealsData) {
     const isAdmin = this.state.role === 'admin';
 
     // Always init these
@@ -217,13 +420,40 @@ window.DineDesk = {
       FinanceModule.init(diningId);
       SettingsModule.init(diningId);
       UserDashboard.renderAdminQuickActions();
+      if (window.FridayMealsModule) {
+        FridayMealsModule.init(diningId);
+        DineDesk.fridayMeals = FridayMealsModule;
+      }
+      if (window.SMSAlertModule) {
+        SMSAlertModule.init(diningId);
+        DineDesk.smsAlert = SMSAlertModule;
+      }
+      if (DineDesk.aiControl) {
+        DineDesk.aiControl.init(diningId);
+      }
+    }
+
+    // Friday Meal Page (available to all roles)
+    if (window.FridayMealPageModule) {
+      FridayMealPageModule.init(diningId, userId);
+      DineDesk.fridayMealPage = FridayMealPageModule;
     }
 
     // Recent activity
     UserDashboard.renderRecentActivity(diningId);
 
     // Meal history for profile
-    HistoryModule.renderMealHistory(diningId, userId);
+    HistoryModule.renderMealHistory(diningId, userId, mealsData);
+  },
+
+  /**
+   * Setup reactive Firebase listeners for live updates after initial load.
+   * These run in the background and recalculate/re-render when data changes.
+   */
+  _setupLiveListeners(diningId) {
+    db.ref(`dinings/${diningId}/bazar`).on('value', () => this._recalcMealRate());
+    db.ref(`dinings/${diningId}/meals`).on('value', () => this._recalcMealRate());
+    db.ref(`dinings/${diningId}/deposits`).on('value', () => this._recalcDeposits());
   },
 
   /**
@@ -273,8 +503,8 @@ window.DineDesk = {
         if (trackedMeals.breakfast) activeRates.push(fixedRates.breakfast || 0);
         if (trackedMeals.lunch) activeRates.push(fixedRates.lunch || 0);
         if (trackedMeals.dinner) activeRates.push(fixedRates.dinner || 0);
-        
-        const avgRate = activeRates.length > 0 ? (activeRates.reduce((a,b)=>a+b, 0) / activeRates.length) : 0;
+
+        const avgRate = activeRates.length > 0 ? (activeRates.reduce((a, b) => a + b, 0) / activeRates.length) : 0;
         this.state.mealRate = avgRate;
         this.state.totalMeals = totalMeals;
         this.state.totalBazar = totalBazar;
@@ -324,16 +554,13 @@ window.DineDesk = {
       console.error('[DineDesk] Meal rate calc error:', error);
     }
 
-    // Listen for changes to re-calculate
-    db.ref(`dinings/${this.state.diningId}/bazar`).on('value', () => this._recalcMealRate());
-    db.ref(`dinings/${this.state.diningId}/meals`).on('value', () => this._recalcMealRate());
-    db.ref(`dinings/${this.state.diningId}/deposits`).on('value', () => this._recalcDeposits());
+    // Live listeners are now set up separately via _setupLiveListeners()
   },
 
   /**
    * Recalculate meal rate (debounced)
    */
-  _recalcMealRate: Utils.debounce(async function() {
+  _recalcMealRate: Utils.debounce(async function () {
     try {
       const [bazarSnap, mealsSnap, usersSnap, settingsSnap] = await Promise.all([
         db.ref(`dinings/${DineDesk.state.diningId}/bazar`).once('value'),
@@ -402,7 +629,7 @@ window.DineDesk = {
   /**
    * Recalculate total deposits
    */
-  _recalcDeposits: Utils.debounce(async function() {
+  _recalcDeposits: Utils.debounce(async function () {
     try {
       const snap = await db.ref(`dinings/${DineDesk.state.diningId}/deposits`).once('value');
       let total = 0;
@@ -443,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('click', (e) => {
   const trigger = e.target.closest('.custom-dropdown-trigger');
   const customDropdown = e.target.closest('.custom-dropdown');
-  
+
   if (trigger) {
     const dropdown = trigger.parentElement;
     // Close all other dropdowns

@@ -486,26 +486,6 @@
   text-decoration: underline;
 }
 
-/* === PAGE LOADER === */
-.page-loader {
-  position: fixed;
-  inset: 0;
-  background: #064e3b;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  z-index: 9999;
-}
-
-.page-loader .brand-text {
-  font-size: 22px;
-  font-weight: 800;
-  color: white;
-  letter-spacing: -0.03em;
-}
-
 /* === TOAST === */
 .toast-container {
   position: fixed;

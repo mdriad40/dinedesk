@@ -5,6 +5,7 @@
 const UsersModule = {
   users: {},
   editingUserId: null,
+  selectedUserId: null,
 
   /**
    * Initialize user management with realtime listener
@@ -14,6 +15,7 @@ const UsersModule = {
     this.users = {};
     this.mealsBreakdown = {};
     this.settings = {};
+    this.selectedUserId = null;
 
     db.ref(`dinings/${diningId}/settings`).on('value', (snap) => {
       this.settings = snap.val() || {};
@@ -49,9 +51,11 @@ const UsersModule = {
       this.render();
       this._updateUserCount();
 
-      // If we are currently on the meals page, update its user grid
+      // If we are currently on the meals page, refresh both the user grid AND
+      // the meal log table — users arriving late would otherwise leave the log empty.
       if (Router.currentPage === 'meals' && DineDesk.meals) {
         DineDesk.meals.renderUserGrid();
+        DineDesk.meals.renderMealLog();
       }
     });
 
@@ -59,6 +63,27 @@ const UsersModule = {
       this.deposits = snap.val() || {};
       if (Object.keys(this.users).length > 0) this.render();
     });
+
+    // Keydown listener for Enter key to impersonate
+    if (!this._keydownListenerAdded) {
+      document.addEventListener('keydown', (e) => {
+        if (Router.currentPage === 'users' && e.key === 'Enter') {
+          if (this.selectedUserId) {
+            window.open(`dashboard.html?impersonate=${this.selectedUserId}`, '_blank');
+          }
+        }
+      });
+      this._keydownListenerAdded = true;
+    }
+  },
+
+  /**
+   * Set selected user and highlight their card
+   */
+  selectUser(id, el) {
+    this.selectedUserId = id;
+    document.querySelectorAll('.user-card').forEach(c => c.classList.remove('selected'));
+    if (el) el.classList.add('selected');
   },
 
   /**
@@ -68,7 +93,14 @@ const UsersModule = {
     const grid = document.getElementById('usersGrid');
     if (!grid) return;
 
-    const userEntries = Object.entries(this.users);
+    const userEntries = Object.entries(this.users).sort((a, b) => {
+      const timeA = a[1].createdAt ? new Date(a[1].createdAt).getTime() : 0;
+      const timeB = b[1].createdAt ? new Date(b[1].createdAt).getTime() : 0;
+      if (timeA !== timeB) {
+        return timeA - timeB;
+      }
+      return a[1].name.localeCompare(b[1].name);
+    });
 
     if (userEntries.length === 0) {
       grid.innerHTML = `
@@ -84,63 +116,18 @@ const UsersModule = {
       return;
     }
 
-    // Calculate meal rate for display
-    const mealRate = DineDesk.state.mealRate || 0;
-    const rateMode = this.settings?.rateMode || 'market';
-    const fixedRates = rateMode === 'fixed' ? (this.settings?.fixedRates || null) : null;
-
-    // Aggregate deposits by user
-    const uDeposits = {};
-    const uOtherCosts = {};
-    const uDeductions = {};
-
-    Object.values(this.deposits || {}).forEach(d => {
-      if (!d.userId) return;
-      const amt = Math.abs(Utils.num(d.amount));
-      if (d.type === 'deposit') {
-        uDeposits[d.userId] = (uDeposits[d.userId] || 0) + amt;
-      } else if (d.type === 'other_costing') {
-        uOtherCosts[d.userId] = (uOtherCosts[d.userId] || 0) + amt;
-      } else if (d.type === 'deduction') {
-        uDeductions[d.userId] = (uDeductions[d.userId] || 0) + amt;
-      }
-    });
-
     grid.innerHTML = userEntries.map(([id, user]) => {
-      const uBreakdown = this.mealsBreakdown[id] || { breakfast: 0, lunch: 0, dinner: 0 };
-      const mealCost = Utils.calcMealCost(mealRate, user.totalMeals, uBreakdown, fixedRates);
-
-      const deposit = uDeposits[id] || 0;
-      const otherCost = uOtherCosts[id] || 0;
-      const deduction = uDeductions[id] || 0;
-      const totalCost = mealCost + otherCost;
-      const balance = deposit - totalCost - deduction;
-
-      const balanceClass = balance >= 0 ? 'positive' : '';
       const roleBadge = user.role === 'admin'
         ? '<span class="badge badge-primary" style="margin-left:var(--space-2);">Admin</span>'
         : '';
+      const isSelected = id === this.selectedUserId ? 'selected' : '';
 
       return `
-        <div class="user-card fade-up" style="animation-delay:${Math.random() * 0.15}s;">
+        <div class="user-card fade-up ${isSelected}" onclick="DineDesk.users.selectUser('${id}', this)" style="animation-delay:${Math.random() * 0.15}s;">
           <div class="avatar" style="background:${this._avatarColor(user.name)};">${Utils.initials(user.name)}</div>
           <div class="user-card-info">
             <div class="user-card-name">${user.name || 'Unknown'}${roleBadge}</div>
-            <div class="user-card-meta">@${user.username || '—'} · ${user.phone || user.email || ''}</div>
-          </div>
-          <div class="user-card-stats">
-            <div class="user-card-stat">
-              <div class="user-card-stat-value">${user.totalMeals || 0}</div>
-              <div class="user-card-stat-label">Meals</div>
-            </div>
-            <div class="user-card-stat">
-              <div class="user-card-stat-value">${Utils.currency(deposit)}</div>
-              <div class="user-card-stat-label">Deposit</div>
-            </div>
-            <div class="user-card-stat">
-              <div class="user-card-stat-value due-amount ${balanceClass}">${Utils.currency(balance)}</div>
-              <div class="user-card-stat-label">Balance</div>
-            </div>
+            <div class="user-card-meta">Phone: ${user.phone || '—'}</div>
           </div>
           ${user.role !== 'admin' ? `
             <div class="dropdown" style="margin-left:var(--space-2);">
@@ -148,11 +135,15 @@ const UsersModule = {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
               </button>
               <div class="dropdown-menu">
-                <button class="dropdown-item" onclick="DineDesk.users.showEditModal('${id}')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <button class="dropdown-item" onclick="window.open('dashboard.html?impersonate=${id}', '_blank'); event.stopPropagation();">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                  Open Account
+                </button>
+                <button class="dropdown-item" onclick="DineDesk.users.showEditModal('${id}'); event.stopPropagation();">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   Edit
                 </button>
-                <button class="dropdown-item danger" onclick="DineDesk.users.confirmDelete('${id}', '${(user.name || '').replace(/'/g, "\\'")}')">
+                <button class="dropdown-item danger" onclick="DineDesk.users.confirmDelete('${id}', '${(user.name || '').replace(/'/g, "\\'")}'); event.stopPropagation();">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                   Delete
                 </button>
@@ -162,6 +153,8 @@ const UsersModule = {
         </div>
       `;
     }).join('');
+
+
 
     // Close dropdowns on outside click
     document.addEventListener('click', () => {
@@ -387,9 +380,8 @@ const UsersModule = {
       badge.textContent = count;
       badge.style.display = count > 0 ? 'inline' : 'none';
     }
-    Utils.setText('usersSubtitle', `${count} member${count !== 1 ? 's' : ''} in your dining`);
+    Utils.setText('usersSubtitle', `${count} member${count !== 1 ? 's' : ''} · Click a card & press Enter to open their account in a new tab`);
   },
-
   /**
    * Get avatar background color based on name
    */
